@@ -1,0 +1,178 @@
+name: Build refpolicy
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Refpolicy version (a git commit ID, tag, or branch)"
+        required: false
+        type: string
+        default: ""
+      path:
+        description: "Path to store the refpolicy sources"
+        required: false
+        type: string
+        default: "refpolicy-src"
+      python-version:
+        description: "Python version to use"
+        required: true
+        type: string
+      artifact-name:
+        description: "Artifact name to use; suffixed with policy build options (distro, mls/mcs, etc.)"
+        required: false
+        type: string
+        default: "refpolicy"
+      userspace-artifact-name:
+        description: "Name of the userspace artifact to download"
+        required: false
+        type: string
+        default: "selinux"
+      setools-artifact-name:
+        description: "Name of the setools artifact to download"
+        required: false
+        type: string
+        default: "setools"
+      matrix:
+        description: "JSON build matrix from global-vars.yml"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    strategy:
+      matrix: ${{ fromJSON(inputs.matrix) }}
+
+    steps:
+    - name: Checkout refpolicy sources
+      uses: actions/checkout@v6
+      with:
+        ref: "${{ inputs.version }}"
+        path: "${{ inputs.path }}"
+
+    - name: Download userspace artifact
+      uses: actions/download-artifact@v8
+      id: dl-userspace
+      with:
+        name: ${{ inputs.userspace-artifact-name }}
+
+    - name: Unpack userspace artifact
+      shell: bash
+      run: |
+        tar -C "${{ steps.dl-userspace.outputs.download-path }}" -zxvf ${{ inputs.userspace-artifact-name }}
+
+    # This should be the minimum required Python version to build refpolicy.
+    # or the standard Python version on Ubuntu.
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "${{ inputs.python-version }}"
+
+    - name: Download setools artifact
+      uses: actions/download-artifact@v8
+      id: dl-setools
+      with:
+        name: ${{ inputs.setools-artifact-name }}
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        sudo python -m pip install setools*.whl networkx
+
+    - name: Configure environment
+      shell: bash
+      run: |
+        echo "DESTDIR=/tmp/refpolicy" >> $GITHUB_ENV
+        echo "PYTHON=python${{ inputs.python-version }}" >> $GITHUB_ENV
+        echo "PYTHONPATH=/usr/local/lib/python${{ inputs.python-version }}/dist-packages" >> $GITHUB_ENV
+        echo "TYPE=${{ matrix.type }}" >> $GITHUB_ENV
+        echo "DISTRO=${{ matrix.distro }}" >> $GITHUB_ENV
+        echo "MONOLITHIC=${{ matrix.monolithic }}" >> $GITHUB_ENV
+        echo "SYSTEMD=${{ matrix.systemd }}" >> $GITHUB_ENV
+        echo "APPS_OFF=${{ matrix.apps-off }}" >> $GITHUB_ENV
+        echo "DIRECT_INITRC=${{ matrix.direct_initrc }}" >> $GITHUB_ENV
+        echo "WERROR=y" >> $GITHUB_ENV
+        echo "TEST_TOOLCHAIN=\"${{ steps.dl-userspace.outputs.download-path }}\"" >> $GITHUB_ENV
+
+    - name: Build refpolicy
+      shell: bash
+      working-directory: "${{ inputs.path }}"
+      run: |
+        # Drop build.conf settings to listen to env vars
+        sed -r -i -e '/(MONOLITHIC|TYPE|DISTRO|SYSTEMD|DIRECT_INITRC|WERROR)/d' build.conf
+
+        make bare
+        make conf
+        make
+
+    - name: Validate output policy
+      working-directory: ${{ inputs.path }}
+      shell: bash
+      run: |
+        temp="${TEST_TOOLCHAIN%\"}"
+        temp="${temp#\"}"
+        echo "compiler-directory = ${temp}/usr/libexec/selinux/hll" | sudo tee -a /etc/selinux/semanage.conf
+        echo -e "[setfiles]\npath = ${temp}/sbin/setfiles\nargs = -c \$@ \$<\n[end]" | sudo tee -a /etc/selinux/semanage.conf
+        echo -e "[sefcontext_compile]\npath = ${temp}/usr/sbin/sefcontext_compile\nargs = \$@\n[end]" | sudo tee -a /etc/selinux/semanage.conf
+        sudo install -m 0755 -o 0 -g 0 "${temp}/lib/libselinux.so.1" /lib/x86_64-linux-gnu/libselinux.so.1
+        sudo install -m 0755 -o 0 -g 0 "${temp}/lib/libsepol.so.2" /lib/x86_64-linux-gnu/libsepol.so.2
+        make validate
+
+    - name: Build docs
+      working-directory: ${{ inputs.path }}
+      shell: bash
+      run: |
+        make xml
+        make html
+
+    - name: Test installation
+      working-directory: ${{ inputs.path }}
+      shell: bash
+      run: |
+        make install
+        make install-headers
+        make install-src
+        make install-docs
+        make install-udica-templates
+        make install-appconfig
+      env:
+        DESTDIR: /tmp/refpolicy-install
+
+    # normalize to "sepolicy" and "file_contexts"
+    - name: Normalize artifacts
+      working-directory: ${{ inputs.path }}
+      shell: bash
+      run: |
+        if [[ $MONOLITHIC == "y" ]]; then
+          policy_file=$(make MONOLITHIC=y --eval='output_filename: ; @echo $(polver)' output_filename)
+          mv "${policy_file}" sepolicy
+        else
+          if [ -f tmp/policy.bin ]; then
+            # temp backwards compatibility
+            mv tmp/policy.bin sepolicy
+            mv tmp/all_mods.fc file_contexts
+          else
+            policy_file=$(make MONOLITHIC=n --eval='output_filename: ; @echo $(policy_bin)' output_filename)
+            policy_fctx=$(make MONOLITHIC=n --eval='output_filename: ; @echo $(policy_fc)' output_filename)
+            mv "${policy_file}" sepolicy
+            mv "${policy_fctx}" file_contexts
+          fi
+        fi
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.artifact-name }}-${{ matrix.distro }}-${{ matrix.type }}-${{ matrix.monolithic }}-${{ matrix.systemd }}-${{ matrix.direct_initrc }}-${{ matrix.apps-off }}
+        path: |
+          ${{ inputs.path }}/sepolicy
+          ${{ inputs.path }}/file_contexts
+        if-no-files-found: error
+
+    - name: Upload failed build directory artifact
+      if: ${{ failure() && runner.debug }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: failed-${{ inputs.artifact-name }}-${{ matrix.distro }}-${{ matrix.type }}-${{ matrix.monolithic }}-${{ matrix.systemd }}-${{ matrix.direct_initrc }}-${{ matrix.apps-off }}
+        path: |
+          ${{ github.workspace }}

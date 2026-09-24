@@ -1,0 +1,46 @@
+policy_module(secadm)
+
+########################################
+#
+# Declarations
+#
+
+role secadm_r;
+
+userdom_unpriv_user_template(secadm)
+userdom_security_admin_template(secadm_t, secadm_r)
+
+########################################
+#
+# Local policy
+#
+
+mls_file_write_all_levels(secadm_t)
+
+auth_role(secadm, secadm_t, secadm_application_exec_domain, secadm_r)
+
+logging_watch_audit_log(secadm_t)
+
+optional_policy(`
+	auditadm_role_change(secadm_r)
+')
+
+optional_policy(`
+	screen_role_template(secadm, secadm_t, secadm_application_exec_domain, secadm_r)
+')
+
+optional_policy(`
+	su_role_template(secadm, secadm_t, secadm_application_exec_domain, secadm_r)
+')
+
+optional_policy(`
+	sudo_role_template(secadm, secadm_t, secadm_application_exec_domain, secadm_r)
+')
+
+optional_policy(`
+	sysadm_role_change(secadm_r, secadm_t)
+')
+
+optional_policy(`
+	vlock_run(secadm_t, secadm_r)
+')

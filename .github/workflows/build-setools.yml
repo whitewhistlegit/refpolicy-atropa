@@ -1,0 +1,90 @@
+name: Build SETools
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "SETools version (a git commit ID, tag, or branch)"
+        type: string
+        required: true
+      python-version:
+        description: "Python version to use"
+        type: string
+        required: true
+      artifact-name:
+        description: "Name of the uploaded artifact"
+        type: string
+        required: false
+        default: "setools"
+      userspace-artifact-name:
+        description: "Name of the userspace artifact to download"
+        type: string
+        required: false
+        default: "selinux"
+    outputs:
+      artifact-id:
+        description: "SETools wheel artifact ID"
+        value: ${{ jobs.build.outputs.artifact-id }}
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    outputs:
+      artifact-id: ${{ steps.upload-artifact.outputs.artifact-id }}
+
+    steps:
+    - name: Checkout setools
+      uses: actions/checkout@v6
+      with:
+        repository: SELinuxProject/setools
+        ref: "${{ inputs.version }}"
+
+    - name: Get the latest commit hash
+      shell: bash
+      run: echo "COMMIT_HASH=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+    - name: Download cached SETools
+      uses: actions/cache@v5
+      id: cache-setools
+      with:
+        path: "setools-*.whl"
+        key: setools-${{ inputs.version }}-${{ env.COMMIT_HASH }}-${{ runner.os }}-${{ runner.arch }}-Python${{ inputs.python-version }}
+
+    - name: Download userspace artifact
+      uses: actions/download-artifact@v8
+      if: ${{ steps.cache-setools.outputs.cache-hit != 'true' }}
+      id: dl-userspace
+      with:
+        name: ${{ inputs.userspace-artifact-name }}
+
+    - name: Unpack userspace artifact
+      shell: bash
+      if: ${{ steps.cache-setools.outputs.cache-hit != 'true' }}
+      run: |
+        tar -C "${{ steps.dl-userspace.outputs.download-path }}" -zxvf ${{ inputs.userspace-artifact-name }}
+
+    - name: Build setools
+      if: ${{ steps.cache-setools.outputs.cache-hit != 'true' }}
+      #The new GH action is not available in a release yet.
+      uses: SELinuxProject/setools/.github/actions/build-setools@main
+      #uses: SELinuxProject/setools/.github/actions/build-setools@${{ inputs.version }}
+      id: build-setools
+      with:
+        python: "${{ inputs.python-version }}"
+        userspace-path: "${{ steps.dl-userspace.outputs.download-path }}"
+
+    - name: Upload wheel
+      uses: actions/upload-artifact@v7
+      id: upload-artifact
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: setools*.whl
+        if-no-files-found: error
+
+    - name: Upload failed build directory artifact
+      if: ${{ failure() && runner.debug }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: failed-setools
+        path: |
+          ${{ github.workspace }}
