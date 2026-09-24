@@ -1,0 +1,86 @@
+policy_module(avacore)
+
+########################################
+#
+# Declarations
+#
+
+# ---- Core service (control_panel/main.py + socket.py) ----
+# Owns the memory DB, the FAISS index, the config/.env secrets, and the
+# only LM Studio connection. This is the trust boundary: anything that
+# wants a Lyra reply goes through this domain's internal_chat RPC, not
+# around it.
+type avacore_t;
+type avacore_exec_t;
+application_domain(avacore_t, avacore_exec_t)
+
+type avacore_data_t;
+files_type(avacore_data_t)
+
+type avacore_conf_t;
+files_type(avacore_conf_t)
+
+# ---- Discord client (control_panel/discord_client.py) ----
+# Parses untrusted network input from Discord's gateway. Deliberately
+# has no access to avacore_data_t (memory DB/FAISS index) or the LM
+# Studio port - it can only reach the core service's internal_chat RPC,
+# same as any other client of that API. See discord_client.py's module
+# docstring for the reasoning.
+type avacore_discord_t;
+type avacore_discord_exec_t;
+application_domain(avacore_discord_t, avacore_discord_exec_t)
+
+########################################
+#
+# avacore_t (core service) local policy
+#
+
+# Private data: SQLite memory DB + FAISS index under data/memory/
+manage_dirs_pattern(avacore_t, avacore_data_t, avacore_data_t)
+manage_files_pattern(avacore_t, avacore_data_t, avacore_data_t)
+manage_lnk_files_pattern(avacore_t, avacore_data_t, avacore_data_t)
+
+# .env (DISCORD_TOKEN, OWNER_ID, INTERNAL_AUTH_TOKEN) and config/*.json -
+# read-only, nothing in the app writes these at runtime.
+read_files_pattern(avacore_t, avacore_conf_t, avacore_conf_t)
+read_lnk_files_pattern(avacore_t, avacore_conf_t, avacore_conf_t)
+
+# GPU access for LM Studio / future local-model workloads on this domain.
+dev_rw_dri(avacore_t)
+
+# Internal RPC server: bind 9099 on loopback.
+corenet_tcp_bind_generic_node(avacore_t)
+corenet_tcp_bind_avacore_port(avacore_t)
+
+# Outbound to LM Studio (127.0.0.1:1234). Upstream refpolicy already
+# claims tcp/1234 for "monopd" - LM Studio isn't monopd, this is just a
+# port-number collision refpolicy resolves by whichever service claimed
+# the number first. Functionally this is exactly "may connect to
+# tcp/1234", which is what we want.
+corenet_tcp_connect_monopd_port(avacore_t)
+
+# The project directory lives under the user's home tree; only search
+# access to traverse into it is needed here - the actual project files
+# get their own types below via avacore.fc, not user_home_t.
+userdom_search_user_home_dirs(avacore_t)
+
+########################################
+#
+# avacore_discord_t (Discord client) local policy
+#
+
+# Needs to read .env for DISCORD_TOKEN/OWNER_ID/INTERNAL_AUTH_TOKEN - it
+# has to present that token to authenticate to avacore_t regardless, so
+# this doesn't cross a real boundary. It does NOT get avacore_data_t.
+read_files_pattern(avacore_discord_t, avacore_conf_t, avacore_conf_t)
+
+# Internal RPC client: connect to the core service on 9099.
+corenet_tcp_connect_avacore_port(avacore_discord_t)
+
+# Discord's gateway (wss://) and REST API are both plain HTTPS/443.
+# Voice is not yet implemented in discord_client.py (see roadmap step 4)
+# - when it is, voice's UDP egress needs its own corenet rules added
+# here rather than granted speculatively now.
+corenet_tcp_connect_http_port(avacore_discord_t)
+
+userdom_search_user_home_dirs(avacore_discord_t)

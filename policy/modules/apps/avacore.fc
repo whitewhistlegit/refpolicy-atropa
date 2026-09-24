@@ -1,0 +1,13 @@
+#
+# Machine-specific paths by design, same as this tree's nvidia device
+# labeling (see HANDOFF.md) - this policy is built for FinalMaelstrom, not
+# for upstream portability.
+#
+
+/home/whitewhistle/avacore-dev/avabase2/start\.sh          --  gen_context(system_u:object_r:avacore_exec_t,s0)
+/home/whitewhistle/avacore-dev/avabase2/start_discord\.sh  --  gen_context(system_u:object_r:avacore_discord_exec_t,s0)
+
+/home/whitewhistle/avacore-dev/avabase2/data(/.*)?             gen_context(system_u:object_r:avacore_data_t,s0)
+
+/home/whitewhistle/avacore-dev/avabase2/\.env                  gen_context(system_u:object_r:avacore_conf_t,s0)
+/home/whitewhistle/avacore-dev/avabase2/config(/.*)?            gen_context(system_u:object_r:avacore_conf_t,s0)
