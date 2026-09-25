@@ -138,6 +138,12 @@ optional_policy(`
 	dbus_connect_system_bus(bluetooth_t)
 	init_dbus_send_script(bluetooth_t)
 
+	# PropertiesChanged (RSSI etc.) broadcasts on the system bus land on
+	# every subscriber including PID1, which never consumes them but still
+	# triggers a send_msg check. Confirmed via busctl monitor: pure BLE
+	# scan signal noise, not a stuck method call, ~430/13min.
+	dontaudit bluetooth_t init_t:dbus send_msg;
+
 	optional_policy(`
 		cups_dbus_chat(bluetooth_t)
 	')
