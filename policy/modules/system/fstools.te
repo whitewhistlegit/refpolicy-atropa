@@ -115,6 +115,9 @@ dev_rw_sysfs(fsadm_t)
 dev_getattr_usbfs_dirs(fsadm_t)
 # Access to /dev/mapper/control
 dev_rw_lvm_control(fsadm_t)
+# folded from the module store (audit2allow local module); fsck reads
+# udev device data during device probing
+udev_read_runtime_files(fsadm_t)
 # for losetup
 dev_rw_loop_control(fsadm_t)
 

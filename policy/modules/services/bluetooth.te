@@ -129,6 +129,10 @@ miscfiles_read_localization(bluetooth_t)
 miscfiles_read_fonts(bluetooth_t)
 miscfiles_read_hwdata(bluetooth_t)
 
+# folded from the module store (audit2allow local module); bluetoothd
+# searches /run/udev for device data
+udev_search_runtime(bluetooth_t)
+
 userdom_dontaudit_use_unpriv_user_fds(bluetooth_t)
 userdom_dontaudit_use_user_terminals(bluetooth_t)
 userdom_dontaudit_search_user_home_dirs(bluetooth_t)

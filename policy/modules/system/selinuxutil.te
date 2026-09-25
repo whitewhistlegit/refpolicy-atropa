@@ -541,6 +541,15 @@ allow semanage_t semanage_tmp_t:dir manage_dir_perms;
 allow semanage_t semanage_tmp_t:file { manage_file_perms mmap_exec_file_perms };
 files_tmp_filetrans(semanage_t, semanage_tmp_t, { file dir })
 
+# folded from the module store (audit2allow local modules for semodule/
+# setsebool); without this, semanage operations themselves can fail under
+# enforcing -- semanage_t needs to be able to relabel its own store back
+# from a transient state during a module install/commit
+allow semanage_t semanage_store_t:{ dir file } relabelfrom;
+fs_getattr_all_fs(semanage_t)
+fs_search_tmpfs(semanage_t)
+logging_search_logs(semanage_t)
+
 kernel_read_system_state(semanage_t)
 kernel_read_kernel_sysctls(semanage_t)
 kernel_read_vm_overcommit_sysctl(semanage_t)
