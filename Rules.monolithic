@@ -142,7 +142,7 @@ $(tmpdir)/pre_te_files.conf: $(pre_te_files)
 	@test -d $(tmpdir) || mkdir -p $(tmpdir)
 	$(verbose) $(M4) $(M4PARAM) $^ > $@
 
-$(tmpdir)/generated_definitions.conf: $(all_te_files)
+$(tmpdir)/generated_definitions.conf: $(all_te_files) $(booleans)
 	@test -d $(tmpdir) || mkdir -p $(tmpdir)
 # define all available object classes
 	@cat $(m4divert) > $@

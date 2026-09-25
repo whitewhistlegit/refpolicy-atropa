@@ -144,7 +144,7 @@ $(tmpdir)/pre_te_files.conf: $(base_pre_te_files)
 	@test -d $(tmpdir) || mkdir -p $(tmpdir)
 	$(verbose) $(M4) $(M4PARAM) $^ > $@
 
-$(tmpdir)/generated_definitions.conf:
+$(tmpdir)/generated_definitions.conf: $(booleans)
 	@test -d $(tmpdir) || mkdir -p $(tmpdir)
 # define all available object classes
 	@cat $(m4divert) > $@
