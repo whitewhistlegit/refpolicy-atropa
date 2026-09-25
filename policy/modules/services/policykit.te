@@ -197,6 +197,12 @@ miscfiles_setattr_fonts_cache_dirs(policykit_auth_t)
 
 userdom_dontaudit_read_user_home_content_files(policykit_auth_t)
 
+# verify the user's password via unix_chkpwd; polkit-agent-helper-1 execs it
+# with no-new-privileges set, so the plain domtrans isn't enough on its own -
+# the nnp bounded-transition check also needs an explicit grant
+auth_domtrans_chk_passwd(policykit_auth_t)
+allow policykit_auth_t chkpwd_t:process2 nnp_transition;
+
 optional_policy(`
 	dbus_system_domain(policykit_auth_t, policykit_auth_exec_t)
 	dbus_all_session_bus_client(policykit_auth_t)

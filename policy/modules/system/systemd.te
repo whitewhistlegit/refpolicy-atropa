@@ -996,6 +996,11 @@ logging_stream_connect_journald_varlink(systemd_journal_init_t)
 
 miscfiles_read_localization(systemd_journal_init_t)
 
+# journalctl reads /etc/machine-id for the journal's machine ID field,
+# and mmaps journal files directly rather than just read()ing them
+files_read_etc_runtime_files(systemd_journal_init_t)
+mmap_read_files_pattern(systemd_journal_init_t, systemd_journal_t, systemd_journal_t)
+
 #######################################
 #
 # locale local policy
@@ -1006,6 +1011,7 @@ kernel_read_kernel_sysctls(systemd_locale_t)
 
 files_read_etc_files(systemd_locale_t)
 files_read_usr_files(systemd_locale_t)
+files_map_usr_files(systemd_locale_t)
 
 fs_getattr_all_fs(systemd_locale_t)
 fs_search_cgroup_dirs(systemd_locale_t)
@@ -2172,6 +2178,20 @@ allow systemd_tmpfiles_t systemd_tmpfiles_conf_type:dir search_dir_perms;
 allow systemd_tmpfiles_t systemd_tmpfiles_conf_type:file read_file_perms;
 
 allow systemd_tmpfiles_t systemd_nspawn_runtime_t:fifo_file unlink;
+
+# tmpfiles.d C lines (arch.conf) stat /etc/shadow, /etc/gshadow to check
+# they exist before copying from /usr/share/factory; symlink checks for
+# /etc/profile.d/*.sh (L lines in 20-systemd-*.conf); dir sweep touches
+# auditd's /etc config dir too
+auth_getattr_shadow(systemd_tmpfiles_t)
+allow systemd_tmpfiles_t bin_t:lnk_file { getattr read };
+optional_policy(`
+	gen_require(`
+		type auditd_etc_t;
+	')
+
+	allow systemd_tmpfiles_t auditd_etc_t:dir search;
+')
 
 kernel_getattr_proc(systemd_tmpfiles_t)
 kernel_read_kernel_sysctls(systemd_tmpfiles_t)

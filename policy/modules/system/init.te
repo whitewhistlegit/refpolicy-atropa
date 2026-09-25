@@ -613,6 +613,11 @@ ifdef(`init_systemd',`
 	')
 
 	optional_policy(`
+		# to run aide --check from a systemd timer
+		aide_domtrans(init_t)
+	')
+
+	optional_policy(`
 		clock_read_adjtime(init_t)
 	')
 

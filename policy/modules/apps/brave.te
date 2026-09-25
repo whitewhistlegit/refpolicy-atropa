@@ -1,0 +1,508 @@
+policy_module(brave)
+
+########################################
+#
+# Declarations
+#
+
+## <desc>
+## <p>
+## Allow brave to access direct rendering interface
+## </p>
+## <p>
+## Needed for good performance on complex sites
+## </p>
+## </desc>
+gen_tunable(brave_dri, true)
+
+## <desc>
+## <p>
+## Allow brave to execute heap
+## </p>
+## </desc>
+gen_tunable(brave_exec_heap, false)
+
+## <desc>
+## <p>
+## Allow brave to ptrace itself
+## </p>
+## </desc>
+gen_tunable(brave_ptrace, false)
+
+## <desc>
+## <p>
+## Allow brave to read system information
+## </p>
+## <p>
+## Although not needed for regular browsing, this will allow brave to update
+## its own memory consumption based on system state, support additional
+## debugging, detect specific devices, etc.
+## </p>
+## </desc>
+gen_tunable(brave_read_system_info, false)
+
+## <desc>
+## <p>
+## Allow brave to bind to tcp ports
+## </p>
+## <p>
+## Although not needed for regular browsing, some chrome extensions need to
+## bind to tcp ports and accept connections.
+## </p>
+## </desc>
+gen_tunable(brave_bind_tcp_unreserved_ports, false)
+
+## <desc>
+## <p>
+## Allow brave to read/write USB devices
+## </p>
+## <p>
+## Although not needed for regular browsing, used for debugging over usb
+## or using FIDO U2F tokens.
+## </p>
+## </desc>
+gen_tunable(brave_rw_usb_dev, false)
+
+## <desc>
+## <p>
+## Allow brave to read/write joystick and input event devices
+## </p>
+## <p>
+## Needed for the Gamepad API. refpolicy has no gamepad-specific device
+## type: /dev/input/js* is mouse_device_t (shared with mice) and gamepad
+## evdev nodes are event_device_t (shared with keyboards), so turning this
+## on also lets brave read raw keyboard and mouse input system-wide.
+## </p>
+## </desc>
+gen_tunable(brave_gamepad, false)
+
+type brave_t;
+domain_dyntrans_type(brave_t)
+
+type brave_exec_t;
+application_domain(brave_t, brave_exec_t)
+
+type brave_naclhelper_t;
+type brave_naclhelper_exec_t;
+application_domain(brave_naclhelper_t, brave_naclhelper_exec_t)
+
+type brave_sandbox_t;
+type brave_sandbox_exec_t;
+application_domain(brave_sandbox_t, brave_sandbox_exec_t)
+
+type brave_tmp_t;
+userdom_user_tmp_file(brave_tmp_t)
+
+type brave_tmpfs_t;
+userdom_user_tmpfs_file(brave_tmpfs_t)
+optional_policy(`
+	pulseaudio_tmpfs_content(brave_tmpfs_t)
+	pulseaudio_rw_tmpfs_files(brave_t)
+	pulseaudio_stream_connect(brave_t)
+	pulseaudio_use_fds(brave_t)
+')
+optional_policy(`
+	wayland_client_tmpfs(brave_tmpfs_t)
+')
+
+type brave_xdg_config_t;
+xdg_config_content(brave_xdg_config_t)
+
+# Widevine CDM, kept separate so the rest of the config dir is not executable
+type brave_widevine_t;
+xdg_config_content(brave_widevine_t)
+
+type brave_xdg_cache_t;
+xdg_cache_content(brave_xdg_cache_t)
+
+########################################
+#
+# brave local policy
+#
+
+# execmem for load in plugins
+allow brave_t self:process { execmem getcap getsched setcap setrlimit setsched sigkill signal signull };
+allow brave_t self:dir { add_name write };
+allow brave_t self:file create;
+allow brave_t self:fifo_file rw_fifo_file_perms;
+allow brave_t self:sem create_sem_perms;
+allow brave_t self:netlink_kobject_uevent_socket client_stream_socket_perms;
+allow brave_t self:user_namespace create;
+# cap_userns sys_admin for the sandbox
+allow brave_t self:cap_userns { sys_admin sys_chroot sys_ptrace };
+
+allow brave_t brave_exec_t:file execute_no_trans;
+
+allow brave_t brave_sandbox_t:unix_dgram_socket { getattr read write };
+allow brave_t brave_sandbox_t:unix_stream_socket { getattr read write };
+allow brave_t brave_sandbox_t:file read_file_perms;
+
+allow brave_t brave_naclhelper_t:process { share };
+allow brave_t brave_naclhelper_t:process2 nnp_transition;
+
+# tmp has a wide class access (used for plugins)
+manage_files_pattern(brave_t, brave_tmp_t, brave_tmp_t)
+allow brave_t brave_tmp_t:file map;
+manage_dirs_pattern(brave_t, brave_tmp_t, brave_tmp_t)
+manage_lnk_files_pattern(brave_t, brave_tmp_t, brave_tmp_t)
+manage_sock_files_pattern(brave_t, brave_tmp_t, brave_tmp_t)
+manage_fifo_files_pattern(brave_t, brave_tmp_t, brave_tmp_t)
+files_tmp_filetrans(brave_t, brave_tmp_t, { file dir sock_file })
+# for /run/user/$UID
+userdom_user_runtime_filetrans(brave_t, brave_tmp_t, { file sock_file })
+
+manage_files_pattern(brave_t, brave_tmpfs_t, brave_tmpfs_t)
+allow brave_t brave_tmpfs_t:file map;
+fs_tmpfs_filetrans(brave_t, brave_tmpfs_t, file)
+
+manage_files_pattern(brave_t, brave_xdg_config_t, brave_xdg_config_t)
+allow brave_t brave_xdg_config_t:file map;
+manage_lnk_files_pattern(brave_t, brave_xdg_config_t, brave_xdg_config_t)
+manage_dirs_pattern(brave_t, brave_xdg_config_t, brave_xdg_config_t)
+xdg_config_filetrans(brave_t, brave_xdg_config_t, dir, "BraveSoftware")
+
+# the component updater still has to write the CDM, so this is narrower
+# than before rather than W^X
+manage_files_pattern(brave_t, brave_widevine_t, brave_widevine_t)
+manage_dirs_pattern(brave_t, brave_widevine_t, brave_widevine_t)
+allow brave_t brave_widevine_t:file { map execute };
+filetrans_pattern(brave_t, brave_xdg_config_t, brave_widevine_t, dir, "WidevineCdm")
+
+manage_files_pattern(brave_t, brave_xdg_cache_t, brave_xdg_cache_t)
+allow brave_t brave_xdg_cache_t:file map;
+manage_dirs_pattern(brave_t, brave_xdg_cache_t, brave_xdg_cache_t)
+xdg_cache_filetrans(brave_t, brave_xdg_cache_t, dir, "BraveSoftware")
+
+domtrans_pattern(brave_t, brave_sandbox_exec_t, brave_sandbox_t)
+domtrans_pattern(brave_t, brave_naclhelper_exec_t, brave_naclhelper_t)
+
+# for self:file create
+kernel_associate_proc(brave_t)
+
+kernel_get_sysvipc_info(brave_t)
+kernel_list_proc(brave_t)
+kernel_read_device_sysctls(brave_t)
+kernel_read_fs_sysctls(brave_t)
+kernel_read_kernel_sysctls(brave_t)
+kernel_read_net_sysctls(brave_t)
+kernel_read_psi(brave_t)
+kernel_read_vm_overcommit_sysctl(brave_t)
+
+corecmd_exec_bin(brave_t)
+# Look for /etc/gentoo-release through a shell invocation running find
+corecmd_exec_shell(brave_t)
+
+corenet_tcp_connect_all_unreserved_ports(brave_t)
+corenet_tcp_connect_ftp_port(brave_t)
+corenet_tcp_connect_http_port(brave_t)
+corenet_tcp_connect_ipp_port(brave_t)
+corenet_udp_bind_generic_node(brave_t)
+corenet_udp_bind_all_unreserved_ports(brave_t)
+
+dev_read_sound(brave_t)
+dev_write_sound(brave_t)
+dev_read_urand(brave_t)
+dev_read_rand(brave_t)
+dev_rw_xserver_misc(brave_t)
+dev_map_xserver_misc(brave_t)
+
+domain_dontaudit_search_all_domains_state(brave_t)
+domain_use_interactive_fds(brave_t)
+
+files_list_home(brave_t)
+files_search_home(brave_t)
+files_read_usr_files(brave_t)
+files_map_usr_files(brave_t)
+files_read_etc_files(brave_t)
+files_watch_etc_dirs(brave_t)
+files_watch_root_dirs(brave_t)
+files_watch_runtime_dirs(brave_t)
+
+# During find for /etc/whatever-release we get lots of output otherwise
+files_dontaudit_getattr_all_dirs(brave_t)
+
+fs_dontaudit_getattr_xattr_fs(brave_t)
+fs_getattr_tmpfs(brave_t)
+fs_search_cgroup_dirs(brave_t)
+
+miscfiles_read_all_certs(brave_t)
+miscfiles_read_localization(brave_t)
+
+mount_list_runtime(brave_t)
+
+sysnet_dns_name_resolve(brave_t)
+
+# for /run/udev/data/*
+udev_read_runtime_files(brave_t)
+
+userdom_user_content_access_template(brave, brave_t)
+userdom_dontaudit_list_user_home_dirs(brave_t)
+# Debugging. Also on user_tty_device_t if X is started through "startx" for instance
+userdom_use_user_terminals(brave_t)
+userdom_manage_user_certs(brave_t)
+userdom_user_home_dir_filetrans_user_cert(brave_t, dir, ".pki")
+
+xdg_create_cache_dirs(brave_t)
+xdg_create_config_dirs(brave_t)
+xdg_create_data_dirs(brave_t)
+xdg_manage_downloads(brave_t)
+xdg_read_config_files(brave_t)
+xdg_read_data_files(brave_t)
+
+xserver_user_x_domain_template(brave, brave_t, brave_tmpfs_t)
+xserver_stream_connect_xdm(brave_t)
+xserver_manage_mesa_shader_cache(brave_t)
+
+tunable_policy(`brave_bind_tcp_unreserved_ports',`
+	corenet_tcp_bind_generic_node(brave_t)
+	corenet_tcp_bind_all_unreserved_ports(brave_t)
+	allow brave_t self:tcp_socket { accept listen };
+')
+
+tunable_policy(`brave_dri', `
+	dev_rw_dri(brave_t)
+')
+
+tunable_policy(`brave_exec_heap',`
+	allow brave_t self:process { execheap };
+')
+
+tunable_policy(`brave_ptrace',`
+	allow brave_t self:process { ptrace };
+')
+
+tunable_policy(`brave_rw_usb_dev',`
+	dev_rw_generic_usb_dev(brave_t)
+')
+
+tunable_policy(`brave_read_system_info',`
+	kernel_read_kernel_sysctls(brave_t)
+	# Memory optimizations & optimizations based on OS/version
+	kernel_read_system_state(brave_t)
+
+	# Debugging (sys/kernel/debug) and device information (sys/bus and sys/devices).
+	dev_read_sysfs(brave_t)
+
+	storage_getattr_fixed_disk_dev(brave_t)
+
+	files_read_etc_runtime_files(brave_t)
+
+	dev_dontaudit_getattr_all_chr_files(brave_t)
+	init_dontaudit_getattr_initctl(brave_t)
+',`
+	kernel_dontaudit_read_kernel_sysctl(brave_t)
+	kernel_dontaudit_read_system_state(brave_t)
+
+	dev_dontaudit_read_sysfs(brave_t)
+
+	files_dontaudit_read_etc_runtime_files(brave_t)
+')
+
+optional_policy(`
+	alsa_read_config(brave_t)
+')
+
+optional_policy(`
+	cups_read_config(brave_t)
+	cups_stream_connect(brave_t)
+')
+
+optional_policy(`
+	dbus_all_session_bus_client(brave_t)
+	dbus_send_fifo_file_all_session_bus(brave_t)
+	dbus_system_bus_client(brave_t)
+	dbus_getattr_session_runtime_socket(brave_t)
+	dbus_write_session_runtime_socket(brave_t)
+
+	optional_policy(`
+		unconfined_dbus_chat(brave_t)
+	')
+
+	optional_policy(`
+		gnome_dbus_chat_all_gkeyringd(brave_t)
+		gnome_watch_xdg_config_dirs(brave_t)
+	')
+
+	optional_policy(`
+		devicekit_dbus_chat_disk(brave_t)
+		devicekit_dbus_chat_power(brave_t)
+	')
+
+	optional_policy(`
+		systemd_list_resolved_runtime(brave_t)
+		systemd_dbus_chat_hostnamed(brave_t)
+	')
+
+	optional_policy(`
+		wireplumber_dbus_chat(brave_t)
+	')
+')
+
+optional_policy(`
+	networkmanager_dbus_chat(brave_t)
+	networkmanager_watch_runtime_dirs(brave_t)
+')
+
+optional_policy(`
+	pipewire_client(brave_t)
+')
+
+optional_policy(`
+	ssh_dontaudit_agent_tmp(brave_t)
+')
+
+optional_policy(`
+	wm_application_domain(brave_t, brave_exec_t)
+')
+
+########################################
+#
+# Brave-specific additions beyond the cloned chromium baseline
+# (found by running Brave under this domain in permissive mode)
+#
+
+# probes SELinux boolean state as part of its own sandboxing self-check
+selinux_get_all_booleans(brave_t)
+
+# GPU/Vulkan driver anonymous executable mappings (memfd)
+allow brave_t brave_tmpfs_t:file execute;
+
+fs_read_cgroup_files(brave_t)
+fs_getattr_cgroup_files(brave_t)
+
+files_map_etc_files(brave_t)
+files_watch_usr_dirs(brave_t)
+
+logging_send_syslog_msg(brave_t)
+logging_search_logs(brave_t)
+
+miscfiles_watch_localization(brave_t)
+
+userdom_exec_user_bin_files(brave_t)
+userdom_manage_user_tmp_files(brave_t)
+userdom_manage_user_tmpfs_files(brave_t)
+
+xdg_read_all_cache_files(brave_t)
+xdg_manage_all_cache(brave_t)
+xdg_watch_all_cache_files(brave_t)
+xdg_watch_all_cache_dirs(brave_t)
+
+# GTK/GNOME theming files (colors.css etc.) read transparently by Chromium-family browsers
+optional_policy(`
+	gen_require(`
+		type gnome_xdg_config_t;
+	')
+
+	allow brave_t gnome_xdg_config_t:dir search;
+	allow brave_t gnome_xdg_config_t:file read_file_perms;
+	allow brave_t gnome_xdg_config_t:file map;
+')
+
+# PulseAudio client config
+optional_policy(`
+	gen_require(`
+		type pulseaudio_xdg_config_t, pulseaudio_tmp_t;
+	')
+
+	allow brave_t pulseaudio_xdg_config_t:dir search;
+	allow brave_t pulseaudio_xdg_config_t:file read_file_perms;
+	allow brave_t pulseaudio_tmp_t:dir read;
+')
+
+# Broader than ideal: connectto is checked against the peer's domain, and
+# every peer here is unconfined_t - the session bus (dbus-broker, pid on
+# /run/user/UID/bus) and kwin_wayland (/run/user/UID/wayland-0), which
+# plasma-browser-integration-host (itself running as brave_t) talks to.
+# Can't be narrowed without confining the session bus/compositor.
+optional_policy(`
+	gen_require(`
+		type unconfined_t;
+	')
+
+	allow brave_t unconfined_t:unix_stream_socket { connectto getattr ioctl read write };
+	allow brave_t unconfined_t:file { open read };
+')
+
+# map is not part of manage_files_pattern, needed separately for tmp/tmpfs mmap'd IPC segments
+allow brave_t user_tmp_t:file map;
+allow brave_t user_tmpfs_t:file map;
+manage_sock_files_pattern(brave_t, user_tmp_t, user_tmp_t)
+
+# xdg_read_config_files/xdg_read_data_files above cover generic xdg
+# content; writes outside brave's own types are deliberately not granted
+# (autostart, systemd user units, .desktop files are escape paths)
+
+xserver_read_xkb_libs(brave_t)
+
+# Gamepad API polling (/dev/input/event*, /dev/input/js*) for web games,
+# opt-in because the device types also cover keyboards and mice
+tunable_policy(`brave_gamepad',`
+	dev_rw_input_dev(brave_t)
+	dev_rw_mouse(brave_t)
+')
+
+# Home access is read-only via userdom_user_content_access_template
+# (brave_read_generic_user_content, default on), which is enough for the
+# upload file picker. Saving outside ~/Downloads needs
+# brave_manage_generic_user_content; not granted by default because
+# user_home_t covers ~/.bashrc and friends.
+
+#########################################
+#
+# Brave sandbox local policy
+#
+
+allow brave_sandbox_t self:capability { dac_read_search setgid setuid sys_admin sys_chroot sys_ptrace };
+allow brave_sandbox_t self:process { setrlimit };
+allow brave_sandbox_t self:unix_stream_socket create_stream_socket_perms;
+
+allow brave_sandbox_t brave_t:process { share };
+# /proc access
+allow brave_sandbox_t brave_t:dir list_dir_perms;
+allow brave_sandbox_t brave_t:lnk_file read_lnk_file_perms;
+allow brave_sandbox_t brave_t:file rw_file_perms;
+
+allow brave_sandbox_t brave_t:unix_stream_socket { getattr read write };
+allow brave_sandbox_t brave_t:unix_dgram_socket { getattr read write };
+
+kernel_list_proc(brave_sandbox_t)
+
+domain_dontaudit_read_all_domains_state(brave_sandbox_t)
+domain_use_interactive_fds(brave_sandbox_t)
+
+userdom_use_user_ptys(brave_sandbox_t)
+
+brave_domtrans(brave_sandbox_t)
+domtrans_pattern(brave_sandbox_t, brave_naclhelper_exec_t, brave_naclhelper_t)
+allow brave_sandbox_t brave_naclhelper_t:process share;
+
+##########################################
+#
+# Brave nacl helper local policy
+#
+
+allow brave_naclhelper_t self:user_namespace create;
+allow brave_naclhelper_t brave_t:unix_stream_socket { getattr read write };
+allow brave_naclhelper_t brave_sandbox_t:unix_stream_socket { getattr read write };
+
+allow brave_naclhelper_t self:cap_userns { sys_admin sys_chroot };
+allow brave_naclhelper_t self:process { setcap signal };
+
+dev_read_sysfs(brave_naclhelper_t)
+dev_read_urand(brave_naclhelper_t)
+
+domain_mmap_low_uncond(brave_naclhelper_t)
+
+kernel_list_proc(brave_naclhelper_t)
+
+miscfiles_read_localization(brave_naclhelper_t)
+
+userdom_use_user_ptys(brave_naclhelper_t)
+
+tunable_policy(`brave_read_system_info',`
+	kernel_read_kernel_sysctls(brave_naclhelper_t)
+	kernel_read_system_state(brave_naclhelper_t)
+',`
+	kernel_dontaudit_read_kernel_sysctl(brave_naclhelper_t)
+	kernel_dontaudit_read_system_state(brave_naclhelper_t)
+')

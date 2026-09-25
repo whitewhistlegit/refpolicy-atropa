@@ -1,0 +1,10 @@
+/opt/brave-bin/brave					--	gen_context(system_u:object_r:brave_exec_t,s0)
+/opt/brave-bin/brave-browser				--	gen_context(system_u:object_r:brave_exec_t,s0)
+/opt/brave-bin/chrome-sandbox				--	gen_context(system_u:object_r:brave_sandbox_exec_t,s0)
+/opt/brave-bin/chrome_crashpad_handler			--	gen_context(system_u:object_r:brave_exec_t,s0)
+/opt/brave-bin/chrome-management-service		--	gen_context(system_u:object_r:brave_exec_t,s0)
+/opt/brave-bin/.*\.so(\.[0-9]+)*			--	gen_context(system_u:object_r:brave_exec_t,s0)
+
+HOME_DIR/\.cache/BraveSoftware(/.*)?			gen_context(system_u:object_r:brave_xdg_cache_t,s0)
+HOME_DIR/\.config/BraveSoftware(/.*)?			gen_context(system_u:object_r:brave_xdg_config_t,s0)
+HOME_DIR/\.config/BraveSoftware/[^/]+/WidevineCdm(/.*)?	gen_context(system_u:object_r:brave_widevine_t,s0)

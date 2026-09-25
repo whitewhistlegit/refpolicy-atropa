@@ -336,6 +336,9 @@ optional_policy(`
 allow xdm_t self:capability { chown dac_override dac_read_search fowner fsetid ipc_owner kill mknod net_bind_service setgid setuid sys_nice sys_rawio sys_resource sys_tty_config };
 dontaudit xdm_t self:capability sys_admin;
 allow xdm_t self:process { getsched setexec setpgid setrlimit setsched signal_perms };
+# QML JIT: needed by any Qt Quick-based greeter (SDDM's sddm-greeter-qt6,
+# not just GNOME's), independent of the xserver_gnome_xdm tunable below
+allow xdm_t self:process execmem;
 allow xdm_t self:fifo_file rw_fifo_file_perms;
 allow xdm_t self:shm create_shm_perms;
 allow xdm_t self:sem create_sem_perms;

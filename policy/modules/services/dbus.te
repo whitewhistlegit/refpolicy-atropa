@@ -43,7 +43,7 @@ gen_tunable(dbus_broker_run_transient_units, false)
 ## as the dbus-daemon system bus.
 ## </p>
 ## </desc>
-gen_tunable(dbus_broker_system_bus, false)
+gen_tunable(dbus_broker_system_bus, true)
 
 attribute dbusd_unconfined;
 attribute session_bus_type;
