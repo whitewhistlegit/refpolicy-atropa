@@ -32,7 +32,7 @@ files_type(aide_db_t)
 # Local policy
 #
 
-allow aide_t self:capability { dac_override fowner };
+allow aide_t self:capability { dac_override dac_read_search fowner };
 
 manage_files_pattern(aide_t, aide_db_t, aide_db_t)
 
@@ -43,6 +43,13 @@ logging_log_filetrans(aide_t, aide_log_t, file)
 
 files_read_all_files(aide_t)
 files_read_all_symlinks(aide_t)
+
+# stdout/stderr are an inherited stream socket back to PID1 (aide is run via
+# systemd); without this it's revoked at exec, so a failed run logs nothing
+# to the journal at all, which is how this got missed for so long.
+init_rw_inherited_stream_socket(aide_t)
+
+kernel_read_kernel_sysctls(aide_t)
 
 logging_send_audit_msgs(aide_t)
 logging_send_syslog_msg(aide_t)
