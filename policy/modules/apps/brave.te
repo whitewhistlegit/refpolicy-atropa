@@ -82,6 +82,14 @@ domain_dyntrans_type(brave_t)
 type brave_exec_t;
 application_domain(brave_t, brave_exec_t)
 
+# TEMPORARY diagnostic: brave_t can't fully scan /dev/dri + sysfs for GPU
+# accel (drmGetDevices2 ... Permission denied on every launch), and some of
+# those reads are silently dontaudited (brave_read_system_info tunable is
+# off), so watching real denials needs both permissive and a DONTAUDIT=n
+# build. Remove this line once real denials are captured and the actual
+# grants are written -- git grep '^permissive' finds it if it lingers.
+permissive brave_t;
+
 type brave_naclhelper_t;
 type brave_naclhelper_exec_t;
 application_domain(brave_naclhelper_t, brave_naclhelper_exec_t)
