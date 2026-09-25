@@ -196,6 +196,25 @@ kernel_read_kernel_sysctls(auditd_t)
 # Probably want a transition, and a new auditd_helper app
 kernel_read_system_state(auditd_t)
 
+# /usr/sbin/sedispatch (setroubleshoot's audit->dbus forwarder) has no .fc
+# entry, so it never transitions out of auditd_t when auditd execs it and
+# ends up trying to reach the system bus as auditd_t, which was never
+# granted access. Every failed attempt generates a fresh AVC that auditd
+# immediately redispatches to it -- a self-sustaining feedback loop that
+# took the whole system bus down on 2026-09-25/26 (~65k audit records/sec
+# sustained, journald suppressing millions of duplicate lines, logind and
+# other bus clients dropping off, display frozen, forcing a reboot).
+# sedispatch itself is disabled (/etc/audit/plugins.d/sedispatch.conf) as
+# the actual fix; these dontaudits are a guard so an accidental re-enable
+# (or any other future audisp plugin hitting the same untransitioned-domain
+# gap) can't loop the same way again. The real fix is the transition noted
+# above -- unwritten pending a decision on whether setroubleshoot desktop
+# notifications (currently masked) are wanted at all, given this system's
+# audit volume.
+dontaudit auditd_t system_dbusd_t:unix_stream_socket connectto;
+dontaudit auditd_t system_dbusd_runtime_t:sock_file write;
+dontaudit auditd_t system_dbusd_runtime_t:dir search;
+
 dev_read_sysfs(auditd_t)
 
 fs_getattr_all_fs(auditd_t)
