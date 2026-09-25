@@ -201,9 +201,15 @@ kernel_read_system_state(auditd_t)
 # ends up trying to reach the system bus as auditd_t, which was never
 # granted access. Every failed attempt generates a fresh AVC that auditd
 # immediately redispatches to it -- a self-sustaining feedback loop that
-# took the whole system bus down on 2026-09-25/26 (~65k audit records/sec
-# sustained, journald suppressing millions of duplicate lines, logind and
-# other bus clients dropping off, display frozen, forcing a reboot).
+# coincided with a system-bus outage on 2026-09-25/26 (journald suppressing
+# millions of duplicate lines, logind and other bus clients dropping off,
+# display frozen, forcing a reboot). The loop is real and needed stopping
+# regardless, but per a second boot's live investigation the actual outage
+# mechanism is unconfirmed -- no "backlog limit exceeded" in either boot's
+# kernel log, auditd showed 0 lost/0 backlog-wait, and a comparably (in fact
+# heavier) loop on the next boot did NOT take the bus down. Don't cite this
+# as a proven cause without rechecking the incident writeups in
+# ~/claude-readme/{sonnet-5,opus-5-5}/README.md.
 # sedispatch itself is disabled (/etc/audit/plugins.d/sedispatch.conf) as
 # the actual fix; these dontaudits are a guard so an accidental re-enable
 # (or any other future audisp plugin hitting the same untransitioned-domain
