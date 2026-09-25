@@ -39,7 +39,7 @@ gen_tunable(brave_ptrace, false)
 ## debugging, detect specific devices, etc.
 ## </p>
 ## </desc>
-gen_tunable(brave_read_system_info, false)
+gen_tunable(brave_read_system_info, true)
 
 ## <desc>
 ## <p>
@@ -220,6 +220,24 @@ files_watch_runtime_dirs(brave_t)
 
 # During find for /etc/whatever-release we get lots of output otherwise
 files_dontaudit_getattr_all_dirs(brave_t)
+
+# Expected, keep denied: KDE integration (Plasma browser integration host,
+# which runs in brave_t) probes/writes other apps' xdg config and data
+# (kwinrc, kcminputrc, index.theme) that brave has no business touching.
+dontaudit brave_t xdg_config_t:file write;
+dontaudit brave_t xdg_data_t:file write;
+
+# Expected, keep denied: Chromium tries to put its child processes into
+# systemd --user transient scopes. StartTransientUnit takes an arbitrary
+# ExecStart, so granting this would let a compromised renderer spawn an
+# unconfined user service -- a full confinement escape, not a cosmetic
+# denial. Never turn this into an allow.
+dontaudit brave_t unconfined_t:system start;
+
+# Expected, keep denied: BlueZ device enumeration over the system bus.
+# Web Bluetooth is disabled in this browser's flags, so there's nothing
+# legitimate this would ever need to succeed for.
+dontaudit brave_t bluetooth_t:dbus send_msg;
 
 fs_dontaudit_getattr_xattr_fs(brave_t)
 fs_getattr_tmpfs(brave_t)
