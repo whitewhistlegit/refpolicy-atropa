@@ -43,6 +43,13 @@ logging_log_filetrans(aide_t, aide_log_t, file)
 
 files_read_all_files(aide_t)
 files_read_all_symlinks(aide_t)
+files_getattr_all_sockets(aide_t)
+files_getattr_all_pipes(aide_t)
+
+# aide_t can already read shadow_t (files_read_all_files); this just lets
+# its mmap-based hashing work on /etc/shadow and /etc/gshadow too, so those
+# files actually get integrity-checked instead of silently skipped.
+allow aide_t shadow_t:file map;
 
 # stdout/stderr are an inherited stream socket back to PID1 (aide is run via
 # systemd); without this it's revoked at exec, so a failed run logs nothing
@@ -50,6 +57,7 @@ files_read_all_symlinks(aide_t)
 init_rw_inherited_stream_socket(aide_t)
 
 kernel_read_kernel_sysctls(aide_t)
+kernel_getattr_proc(aide_t)
 
 logging_send_audit_msgs(aide_t)
 logging_send_syslog_msg(aide_t)
