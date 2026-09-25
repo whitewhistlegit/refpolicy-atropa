@@ -80,6 +80,11 @@ tunable_policy(`user_execmod_tmpfs', `
 	userdom_execmod_user_tmpfs_files(unconfined_t)
 ')
 
+# io_uring is hardened off at the kernel level (kernel.io_uring_disabled=2 in
+# 99-atropa-hardening.conf), which makes io_uring_setup() return EPERM before
+# the SELinux hook runs. Quiet fallback in case that sysctl is ever removed.
+dontaudit unconfined_t self:io_uring allowed;
+
 optional_policy(`
 	apache_run_helper(unconfined_t, unconfined_r)
 	apache_role(unconfined, unconfined_t, unconfined_application_exec_domain, unconfined_r)
