@@ -49,6 +49,9 @@ files_getattr_all_pipes(aide_t)
 # aide_t can already read shadow_t (files_read_all_files); this just lets
 # its mmap-based hashing work on /etc/shadow and /etc/gshadow too, so those
 # files actually get integrity-checked instead of silently skipped.
+gen_require(`
+	type shadow_t;
+')
 allow aide_t shadow_t:file map;
 
 # stdout/stderr are an inherited stream socket back to PID1 (aide is run via

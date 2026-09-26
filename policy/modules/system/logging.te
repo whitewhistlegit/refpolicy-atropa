@@ -217,9 +217,15 @@ kernel_read_system_state(auditd_t)
 # above -- unwritten pending a decision on whether setroubleshoot desktop
 # notifications (currently masked) are wanted at all, given this system's
 # audit volume.
-dontaudit auditd_t system_dbusd_t:unix_stream_socket connectto;
-dontaudit auditd_t system_dbusd_runtime_t:sock_file write;
-dontaudit auditd_t system_dbusd_runtime_t:dir search;
+optional_policy(`
+	gen_require(`
+		type system_dbusd_t, system_dbusd_runtime_t;
+	')
+
+	dontaudit auditd_t system_dbusd_t:unix_stream_socket connectto;
+	dontaudit auditd_t system_dbusd_runtime_t:sock_file write;
+	dontaudit auditd_t system_dbusd_runtime_t:dir search;
+')
 
 dev_read_sysfs(auditd_t)
 

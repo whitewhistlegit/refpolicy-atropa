@@ -232,12 +232,25 @@ dontaudit brave_t xdg_data_t:file write;
 # ExecStart, so granting this would let a compromised renderer spawn an
 # unconfined user service -- a full confinement escape, not a cosmetic
 # denial. Never turn this into an allow.
-dontaudit brave_t unconfined_t:system start;
+optional_policy(`
+	gen_require(`
+		type unconfined_t;
+	')
+
+	dontaudit brave_t unconfined_t:system start;
+')
 
 # Expected, keep denied: BlueZ device enumeration over the system bus.
 # Web Bluetooth is disabled in this browser's flags, so there's nothing
 # legitimate this would ever need to succeed for.
-dontaudit brave_t bluetooth_t:dbus send_msg;
+optional_policy(`
+	gen_require(`
+		type bluetooth_t;
+		class dbus send_msg;
+	')
+
+	dontaudit brave_t bluetooth_t:dbus send_msg;
+')
 
 fs_dontaudit_getattr_xattr_fs(brave_t)
 fs_getattr_tmpfs(brave_t)
