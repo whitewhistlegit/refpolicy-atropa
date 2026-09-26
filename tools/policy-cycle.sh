@@ -4,10 +4,10 @@
 # guard rail against mistakes, not a sandbox. `sudo sh -c '...'` or editing
 # the store directly bypasses everything here.
 #
-# The additive/non-additive judgment is made entirely by this script's
-# `gate` subcommand from sediff output, deliberately not left to whoever
-# (human or LLM) is driving the cycle -- that's the whole point of this
-# tool existing.
+# The additive/non-additive judgment is made entirely by tools/gate_check.py
+# (a fail-closed allowlist over sediff's structured output), deliberately
+# not left to whoever (human or LLM) is driving the cycle to eyeball --
+# that's the whole point of this tool existing.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -15,9 +15,11 @@ STATE_DIR="$REPO/tools/.state"
 POLICY_NAME="atropa-refpolicy"
 INSTALLED_POLICY="/etc/selinux/${POLICY_NAME}/policy/policy.35"
 INSTALLED_FC="/etc/selinux/${POLICY_NAME}/contexts/files/file_contexts"
+INSTALLED_HOMEDIR="/etc/selinux/${POLICY_NAME}/contexts/files/homedir_template"
 RUNNING_POLICY="/sys/fs/selinux/policy"
 BUILD_POLICY="$REPO/policy.35"
 BUILD_FC="$REPO/file_contexts"
+BUILD_HOMEDIR="$REPO/homedir_template"
 BACKUP_DIR="$REPO/tools/.state/backups"
 
 mkdir -p "$STATE_DIR" "$BACKUP_DIR"
@@ -26,29 +28,48 @@ GATE_STAMP="$STATE_DIR/gate-verdict"
 BUILD_STAMP="$STATE_DIR/build-stamp"
 VERIFY_STAMP="$STATE_DIR/verify-stamp"
 
-die() { echo "policy-cycle: ERROR: $*" >&2; exit 1; }
+die() {
+	printf 'policy-cycle: ERROR: %s\n' "$*" >&2
+	exit 1
+}
 info() { echo "policy-cycle: $*"; }
+
+sha256_of() { sha256sum "$1" 2>/dev/null | cut -d' ' -f1; }
 
 cmd_build() {
 	cd "$REPO"
 
-	# Refuse a build on master if any permissive line exists in the tree --
-	# this is the exact mistake from earlier tonight (a diagnostic
-	# `permissive brave_t;` left on master, which sediff would have shown
-	# as purely additive and let straight through the gate).
+	# Refuse a build on master if any permissive line exists in the tree
+	# (tracked OR untracked -- brave.te was untracked when this bit us
+	# earlier tonight) -- this is the exact mistake that could have
+	# silently shipped a fully-permissive domain in an unrelated build.
 	local branch
 	branch="$(git rev-parse --abbrev-ref HEAD)"
 	if [ "$branch" = "master" ]; then
-		if git grep -qE '^\s*permissive\s' -- 'policy/**/*.te' 2>/dev/null; then
-			die "master has a 'permissive' line in policy/**/*.te -- move it to its own branch first (git grep -n '^permissive' -- policy/ to find it)"
+		if git grep --untracked -qE '^\s*permissive\s' -- 'policy/**/*.te' 2>/dev/null; then
+			die "master has a 'permissive' line in policy/**/*.te (tracked or untracked) -- move it to its own branch first (git grep -n --untracked '^permissive' -- policy/ to find it)"
 		fi
 	fi
 
-	info "building on branch '$branch'..."
-	sudo make clean >/dev/null
-	sudo make MONOLITHIC=y TYPE=standard SYSTEMD=y policy.35
+	info "building on branch '$branch' (no sudo -- compiling needs no privilege)..."
+	local start_epoch
+	start_epoch="$(date +%s)"
+
+	# MONOLITHIC=y on BOTH clean and build: build.conf defaults to
+	# MONOLITHIC=n, so an unqualified `make clean` is the modular clean
+	# and never removes ./file_contexts -- that left a stale copy from
+	# hours earlier that always "matched" the installed one, silently
+	# disabling the file_contexts half of the gate.
+	make MONOLITHIC=y TYPE=standard SYSTEMD=y clean >/dev/null
+	make MONOLITHIC=y TYPE=standard SYSTEMD=y policy.35 file_contexts
 
 	[ -f "$BUILD_POLICY" ] || die "build did not produce $BUILD_POLICY"
+	[ -f "$BUILD_FC" ] || die "build did not produce $BUILD_FC"
+	local fc_mtime
+	fc_mtime="$(stat -c %Y "$BUILD_FC")"
+	if [ "$fc_mtime" -lt "$start_epoch" ]; then
+		die "$BUILD_FC is older than this build's start time -- it was not actually rebuilt (stale file from an earlier build). Do not trust this build's gate result."
+	fi
 
 	local head dirty
 	head="$(git rev-parse HEAD)"
@@ -61,7 +82,8 @@ cmd_build() {
 		echo "dirty=$dirty"
 		echo "branch=$branch"
 		echo "built_at=$(date -Iseconds)"
-		echo "policy_sha256=$(sha256sum "$BUILD_POLICY" | cut -d' ' -f1)"
+		echo "policy_sha256=$(sha256_of "$BUILD_POLICY")"
+		echo "fc_sha256=$(sha256_of "$BUILD_FC")"
 	} > "$BUILD_STAMP"
 
 	info "build OK. head=$head dirty=$dirty"
@@ -72,96 +94,64 @@ cmd_gate() {
 	[ -f "$BUILD_STAMP" ] || die "no build stamp -- run 'build' first"
 	[ -f "$BUILD_POLICY" ] || die "no $BUILD_POLICY -- run 'build' first"
 
-	local diff_out
-	diff_out="$(sediff "$RUNNING_POLICY" "$BUILD_POLICY" 2>&1)" || die "sediff failed:\n$diff_out"
+	local gate_out verdict
+	gate_out="$(python3 "$REPO/tools/gate_check.py" "$RUNNING_POLICY" "$BUILD_POLICY")"
+	verdict="$(head -1 <<< "$gate_out")"
 
 	local reasons=()
-	local additive=1
+	if [ "$verdict" != "ADDITIVE" ]; then
+		while IFS= read -r line; do
+			[[ "$line" == reason:* ]] && reasons+=("${line#reason: }")
+		done <<< "$gate_out"
+	fi
 
-	# Any "Removed ..." section with count > 0.
-	while IFS= read -r line; do
-		if [[ "$line" =~ \(([0-9]+)\ Added,\ ([0-9]+)\ Removed ]]; then
-			local removed="${BASH_REMATCH[2]}"
-			if [ "$removed" -gt 0 ]; then
-				additive=0
-				reasons+=("non-zero Removed count: $line")
-			fi
+	# file_contexts and homedir_template: ANY difference is non-additive.
+	# These relabel real files on disk and always need a deliberate
+	# restorecon pass, never a live policy load.
+	local fc_diff="" home_diff=""
+	if [ -f "$BUILD_FC" ]; then
+		if [ -f "$INSTALLED_FC" ]; then
+			fc_diff="$(diff -u "$INSTALLED_FC" "$BUILD_FC" || true)"
+		else
+			fc_diff="(no installed file_contexts to diff against -- treating as changed)"
 		fi
-	done <<< "$diff_out"
-
-	# Modified rules: a bare "-perm" token anywhere inside a { ... } permission
-	# set means something was taken away, not just added. sediff marks
-	# additions with a leading '+' on the permission and removals with a
-	# leading '-'; we only ever want to see '+'.
-	if echo "$diff_out" | grep -qE '\{[^}]*[[:space:]]-[A-Za-z_]'; then
-		additive=0
-		reasons+=("a Modified rule has a -perm token (something removed, not just added)")
 	fi
-
-	# Any Modified Boolean at all is a default-state change -- the kernel
-	# preserves runtime boolean values across a reload, so this can only be
-	# safely applied by installing for next boot or via setenforce 0 first,
-	# never loaded live even though it "looks" additive in isolation.
-	if echo "$diff_out" | grep -qE '^[[:space:]]*Modified Booleans:[[:space:]]*[1-9]'; then
-		additive=0
-		reasons+=("a boolean default changed (Modified Booleans > 0) -- runtime value is preserved across reload, this needs next-boot or setenforce 0 first")
+	if [ -f "$BUILD_HOMEDIR" ]; then
+		if [ -f "$INSTALLED_HOMEDIR" ]; then
+			home_diff="$(diff -u "$INSTALLED_HOMEDIR" "$BUILD_HOMEDIR" || true)"
+		else
+			home_diff="(no installed homedir_template to diff against -- treating as changed)"
+		fi
 	fi
+	[ -n "$fc_diff" ] && reasons+=("file_contexts differs from installed")
+	[ -n "$home_diff" ] && reasons+=("homedir_template differs from installed (HOME_DIR fc lines land here, not in file_contexts)")
 
-	# Any added or removed type_transition / role_transition / range_transition
-	# is a labeling-behavior change, not a permission grant -- treat as
-	# non-additive regardless of direction.
-	if echo "$diff_out" | grep -qE '^[[:space:]]*(Type|Role|Range)_?[Tt]ransitions? .*\(([1-9][0-9]* Added|[1-9][0-9]* Removed)'; then
-		additive=0
-		reasons+=("a type_transition/role_transition/range_transition was added or removed")
-	fi
-
-	# Any removed permissive type.
-	if echo "$diff_out" | grep -qE '^[[:space:]]*Permissive [Tt]ypes.*\([0-9]+ Added, [1-9][0-9]* Removed'; then
-		additive=0
-		reasons+=("a permissive type was removed")
-	fi
-
-	# A modified type that lost an attribute (sediff reports this under
-	# "Modified Types" with a '-' attribute).
-	if echo "$diff_out" | grep -qE '^[[:space:]]*\*.*attribute.*[[:space:]]-[A-Za-z_]'; then
-		additive=0
-		reasons+=("a type lost an attribute membership")
-	fi
-
-	# file_contexts: diff the installed fc against what this build would
-	# install. ANY change here is non-additive for this gate -- fc changes
-	# relabel real files on disk and need a deliberate restorecon pass, not
-	# a live load.
-	local fc_diff=""
-	if [ -f "$INSTALLED_FC" ] && [ -f "$BUILD_FC" ]; then
-		fc_diff="$(diff -u "$INSTALLED_FC" "$BUILD_FC" || true)"
-	elif [ -f "$BUILD_FC" ]; then
-		fc_diff="(no installed file_contexts to diff against -- treating as changed)"
-	fi
-	if [ -n "$fc_diff" ]; then
-		additive=0
-		reasons+=("file_contexts differs from installed -- affected paths need restorecon, not a live policy load:")
-	fi
-
-	local build_sha
-	build_sha="$(sha256sum "$BUILD_POLICY" | cut -d' ' -f1)"
+	local build_sha running_sha
+	build_sha="$(sha256_of "$BUILD_POLICY")"
+	running_sha="$(sha256_of "$RUNNING_POLICY")"
+	local final_verdict="ADDITIVE"
+	[ "${#reasons[@]}" -gt 0 ] && final_verdict="NON-ADDITIVE"
 
 	{
-		echo "verdict=$([ "$additive" -eq 1 ] && echo ADDITIVE || echo NON-ADDITIVE)"
+		echo "verdict=$final_verdict"
 		echo "policy_sha256=$build_sha"
+		echo "running_sha256=$running_sha"
 		echo "checked_at=$(date -Iseconds)"
+		echo "head=$(git -C "$REPO" rev-parse HEAD)"
 		for r in "${reasons[@]}"; do echo "reason=$r"; done
 	} > "$GATE_STAMP"
 
-	echo "$diff_out"
-	echo
+	echo "$gate_out"
 	if [ -n "$fc_diff" ]; then
 		echo "--- file_contexts diff (installed vs build) ---"
 		echo "$fc_diff"
-		echo
 	fi
-
-	if [ "$additive" -eq 1 ]; then
+	if [ -n "$home_diff" ]; then
+		echo "--- homedir_template diff (installed vs build) ---"
+		echo "$home_diff"
+	fi
+	echo
+	if [ "$final_verdict" = "ADDITIVE" ]; then
 		info "VERDICT: ADDITIVE -- safe to install and (if sha matches after install) load live"
 	else
 		info "VERDICT: NON-ADDITIVE -- do not load live. Reasons:"
@@ -172,47 +162,62 @@ cmd_gate() {
 
 cmd_install() {
 	[ -f "$BUILD_POLICY" ] || die "no $BUILD_POLICY -- run 'build' first"
+	cd "$REPO"
 
 	local ts
 	ts="$(date +%Y%m%d-%H%M%S)"
-	if [ -f "$INSTALLED_POLICY" ]; then
-		sudo cp "$INSTALLED_POLICY" "$BACKUP_DIR/policy.35.$ts"
-		info "backed up installed policy.35 to $BACKUP_DIR/policy.35.$ts"
-	fi
-	if [ -f "$INSTALLED_FC" ]; then
-		sudo cp "$INSTALLED_FC" "$BACKUP_DIR/file_contexts.$ts"
-		info "backed up installed file_contexts to $BACKUP_DIR/file_contexts.$ts"
-	fi
+	for f in "$INSTALLED_POLICY" "$INSTALLED_FC" "$INSTALLED_HOMEDIR"; do
+		if [ -f "$f" ]; then
+			sudo cp "$f" "$BACKUP_DIR/$(basename "$f").$ts"
+			info "backed up $f to $BACKUP_DIR/$(basename "$f").$ts"
+		fi
+	done
 
-	sudo cp "$BUILD_POLICY" "$INSTALLED_POLICY"
-	cmp "$BUILD_POLICY" "$INSTALLED_POLICY" || die "cmp mismatch after install -- installed file does not match build"
-	info "installed OK, cmp verified. NOT loaded -- run 'load' explicitly if appropriate."
+	# `make install` (not a manual cp) -- this is what actually installs
+	# file_contexts and homedir_template too, runs setfiles -c validation,
+	# genhomedircon and sefcontext_compile. A plain `cp policy.35` alone
+	# left fc/homedir changes uninstalled forever.
+	sudo make MONOLITHIC=y TYPE=standard SYSTEMD=y install
+
+	cmp "$BUILD_POLICY" "$INSTALLED_POLICY" || die "cmp mismatch after install -- installed policy.35 does not match build"
+	if [ -f "$BUILD_FC" ] && [ -f "$INSTALLED_FC" ]; then
+		cmp "$BUILD_FC" "$INSTALLED_FC" || die "cmp mismatch after install -- installed file_contexts does not match build"
+	fi
+	info "installed OK, cmp verified (policy.35 + file_contexts). NOT loaded -- run 'load' explicitly if appropriate."
 }
 
 cmd_load() {
 	[ -f "$GATE_STAMP" ] || die "no gate stamp -- run 'gate' first"
 	[ -f "$INSTALLED_POLICY" ] || die "nothing installed -- run 'install' first"
 
-	local verdict gate_sha installed_sha enforce
+	local verdict gate_sha gate_running_sha installed_sha current_running_sha enforce
 	verdict="$(grep '^verdict=' "$GATE_STAMP" | cut -d= -f2)"
 	gate_sha="$(grep '^policy_sha256=' "$GATE_STAMP" | cut -d= -f2)"
-	installed_sha="$(sha256sum "$INSTALLED_POLICY" | cut -d' ' -f1)"
+	gate_running_sha="$(grep '^running_sha256=' "$GATE_STAMP" | cut -d= -f2)"
+	installed_sha="$(sha256_of "$INSTALLED_POLICY")"
+	current_running_sha="$(sha256_of "$RUNNING_POLICY")"
 	enforce="$(getenforce)"
 
-	if [ "$verdict" = "ADDITIVE" ] && [ "$gate_sha" = "$installed_sha" ]; then
-		info "gate says ADDITIVE and matches installed sha -- loading live"
+	local gate_current=0
+	if [ "$verdict" = "ADDITIVE" ] && [ "$gate_sha" = "$installed_sha" ] && [ "$gate_running_sha" = "$current_running_sha" ]; then
+		gate_current=1
+	fi
+
+	if [ "$gate_current" -eq 1 ]; then
+		info "gate says ADDITIVE, matches installed sha, and running policy hasn't moved since -- loading live"
 	elif [ "$enforce" = "Permissive" ]; then
 		info "system is Permissive -- loading anyway (gate verdict: $verdict)"
 	else
-		info "installed for next boot (verdict=$verdict, enforce=$enforce, gate_sha_matches_installed=$([ "$gate_sha" = "$installed_sha" ] && echo yes || echo no)). Not loading."
+		info "installed for next boot (verdict=$verdict, enforce=$enforce, gate_current=$gate_current). Not loading."
 		exit 0
 	fi
 
 	sudo load_policy
 	local post_diff
 	post_diff="$(sediff --stats "$RUNNING_POLICY" "$INSTALLED_POLICY" 2>&1)"
-	if echo "$post_diff" | grep -qE '\([1-9]'; then
-		die "post-load sediff is NOT all-zero, running policy does not match installed:\n$post_diff"
+	if [ -n "$post_diff" ]; then
+		die "post-load sediff is NOT empty, running policy does not match installed:
+$post_diff"
 	fi
 	info "load OK, post-load sediff confirms running == installed"
 }
@@ -233,9 +238,12 @@ cmd_verify() {
 
 	{
 		echo "verified_at=$(date -Iseconds)"
+		echo "head=$(git -C "$REPO" rev-parse HEAD)"
+		echo "build_sha=$(sha256_of "$BUILD_POLICY")"
 		echo "args=$*"
 		echo "running_ok=$([ -n "$out1" ] && echo yes || echo no)"
 		echo "installed_ok=$([ -n "$out2" ] && echo yes || echo no)"
+		echo "---"
 	} >> "$VERIFY_STAMP"
 }
 
@@ -244,26 +252,39 @@ cmd_verify_bool() {
 	local b="$1"
 	echo "--- compiled default (installed policy.35) ---"
 	seinfo -b "$b" -x "$INSTALLED_POLICY" 2>&1 || true
-	echo "NOTE: '[ $b ]:True' on a rule means the rule lives in that boolean's TRUE branch, not that the boolean's value is true. Check the line above this one for the actual bool default."
+	echo "NOTE: '[ $b ]:True' on a rule means the rule lives in that boolean's TRUE branch, not that the boolean's value is true. Check the 'bool $b ...;' line for the actual default."
 	echo
 	echo "--- runtime value ---"
 	getsebool "$b" 2>&1 || true
 }
 
 cmd_commit() {
+	cd "$REPO"
 	[ -f "$GATE_STAMP" ] || die "no gate stamp for current work -- run 'gate' before committing"
 	[ -f "$VERIFY_STAMP" ] || die "no verify stamp -- run 'verify' at least once before committing"
 
-	cd "$REPO"
 	local branch
 	branch="$(git rev-parse --abbrev-ref HEAD)"
-	if [ "$branch" = "master" ] && git grep -qE '^\s*permissive\s' -- 'policy/**/*.te' 2>/dev/null; then
+	if [ "$branch" = "master" ] && git grep --untracked -qE '^\s*permissive\s' -- 'policy/**/*.te' 2>/dev/null; then
 		die "refusing to commit: master has a 'permissive' line in policy/**/*.te"
 	fi
 
-	local verdict gate_sha head_now gate_stamp_age
-	verdict="$(grep '^verdict=' "$GATE_STAMP" | cut -d= -f2)"
+	local head_now gate_head verify_last_head gate_sha verify_last_sha
 	head_now="$(git rev-parse HEAD)"
+	gate_head="$(grep '^head=' "$GATE_STAMP" | cut -d= -f2)"
+	gate_sha="$(grep '^policy_sha256=' "$GATE_STAMP" | cut -d= -f2)"
+	verify_last_head="$(grep '^head=' "$VERIFY_STAMP" | tail -1 | cut -d= -f2)"
+	verify_last_sha="$(grep '^build_sha=' "$VERIFY_STAMP" | tail -1 | cut -d= -f2)"
+
+	if [ "$gate_head" != "$head_now" ] || [ "$gate_sha" != "$(sha256_of "$BUILD_POLICY")" ]; then
+		die "gate stamp is stale for the current head/build -- run 'build' and 'gate' again before committing"
+	fi
+	if [ "$verify_last_head" != "$head_now" ] || [ "$verify_last_sha" != "$(sha256_of "$BUILD_POLICY")" ]; then
+		die "verify stamp is stale for the current head/build -- run 'verify' again before committing"
+	fi
+
+	local verdict
+	verdict="$(grep '^verdict=' "$GATE_STAMP" | cut -d= -f2)"
 
 	echo "--- suggested commit message body (edit before using) ---"
 	echo "sediff gate verdict: $verdict"
