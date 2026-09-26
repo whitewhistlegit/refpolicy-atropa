@@ -9,6 +9,11 @@
 # not left to whoever (human or LLM) is driving the cycle to eyeball --
 # that's the whole point of this tool existing.
 set -euo pipefail
+# A `set -e` exit is otherwise silent about WHERE it happened -- Opus's
+# dryrun #2 caught a case (an empty grep inside a command substitution,
+# under pipefail) that killed a store-sync-dryrun check with no message at
+# all. Every unexpected exit from here on prints the failing line number.
+trap 'echo "policy-cycle: unexpected exit (see the command at line $LINENO above)" >&2' ERR
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_DIR="$REPO/tools/.state"
@@ -28,6 +33,345 @@ mkdir -p "$STATE_DIR" "$BACKUP_DIR"
 GATE_STAMP="$STATE_DIR/gate-verdict"
 BUILD_STAMP="$STATE_DIR/build-stamp"
 VERIFY_STAMP="$STATE_DIR/verify-stamp"
+
+STORE_DIR="/var/lib/selinux/${POLICY_NAME}"
+STORE_ETC_DIR="/etc/selinux/${POLICY_NAME}"
+STORE_USR_DIR="/usr/share/selinux/${POLICY_NAME}"
+STORE_MARKER="$HOME/.config/atropa/store-synced"
+STORE_BACKUP_DIR="$REPO/tools/.state/store-backups"
+STORE_SCRATCH_DIR="$REPO/tools/.state/store-sync-scratch"
+STORE_LOCK_FILE="$STATE_DIR/store-sync.lock"
+MODULES_CONF="$REPO/policy/modules.conf"
+# The 24 local audit2allow modules identified in Opus's 2026-09-26 store
+# audit (~/claude-readme/opus-5-5/README.md §3e/3e-bis; sources at
+# ~/.local/share/atropa/selinux-review/approved/) -- ad hoc fixes that
+# predate tonight's proper .te-level fixes for the same denials, or were
+# superseded by an explicit decision (e.g. VideoDevicePoll's io_uring
+# allow, replaced by a deliberate dontaudit). All 24 are foreign to the
+# tree (never in policy/modules.conf) and slated for removal in one
+# `make pure-load` transaction: 4 had unique coverage, now folded into
+# the tree (f16b104, independently verified); the rest are pure
+# duplicates or deliberately-reversed hacks. Two of requiredmod's rules
+# (an unconfirmed inherited socket, a var_run_t sock_file write) have no
+# tree equivalent yet -- their removal is an accepted, permissive-mode
+# risk to be verified at the next boot, not folded speculatively.
+# This hardcoded list is a cross-check, not the source of truth: apply
+# computes the actual foreign set live (semodule -l minus modules.conf's
+# base/module entries) and refuses to proceed if it doesn't match this
+# exactly, in case the store has drifted since the 2026-09-26 audit.
+STORE_LEGACY_MODULES=(
+	VideoDevicePoll backlighthelper bluetoothd dbus-broker dbus-broker-lau
+	fsck gmain journalctl kdeconnectd ksplashqml modprobe net plasmashell
+	polkit-agent-he polkit-kde-auth polkitd requiredmod sddm-helper
+	sedispatch semodule setsebool startplasma-x11 systemctl udevuevent
+)
+# booleans.local's current 8 true booleans (preserve) + 2 known
+# tonight-only additions the store doesn't have yet: user_execmod_tmpfs
+# (fold-now decision) and brave_read_system_info (Brave GPU fix, 555378e
+# -- only a .te compiled-default change so far, never pushed to the store).
+STORE_INTENDED_TRUE_BOOLEANS=(
+	xserver_allow_dri systemd_tmpfiles_manage_all aide_mmap_files
+	clamav_read_user_content_files_clamscan
+	clamav_read_all_non_security_files_clamscan
+	dbus_broker_system_bus dbus_broker_run_transient_units allow_execmem
+	user_execmod_tmpfs brave_read_system_info
+)
+
+store_tree_modules() {
+	# "base" (the merged base .te's) plus every modules.conf "= module"
+	# entry -- i.e. every module name our own tree would install, by
+	# semodule's naming (module .te basename).
+	{ echo base; grep -oE '^\S+ = module$' "$MODULES_CONF" | cut -d' ' -f1; } | sort -u
+}
+
+store_foreign_modules() {
+	# Foreign = everything semodule -l lists that isn't in store_tree_modules.
+	# Per Opus's B3, this is computed directly (not via `make pure-load`'s
+	# internal $(shell semodule -l), which fails open to an empty removal
+	# list if the shell call itself fails) so apply can assert it against
+	# STORE_LEGACY_MODULES before ever running a real transaction.
+	local installed
+	installed="$(sudo semodule -l | sort -u)"
+	comm -23 <(echo "$installed") <(store_tree_modules)
+}
+
+store_commit_num() {
+	sudo cat "$STORE_DIR/active/commit_num" 2>/dev/null | tr -d '[:space:]'
+}
+
+store_etc_tree_sha() {
+	# A single combined hash standing in for "the /etc side hasn't moved" --
+	# used by the state-aware re-run check (R2), not as a security control.
+	sudo find "$STORE_ETC_DIR" -type f -exec sha256sum {} + 2>/dev/null | sort | sha256sum | cut -d' ' -f1
+}
+
+store_backup_all() {
+	# R1: all three trees libsemanage/checkpolicy touch, not just two.
+	local ts backup_dir runbook
+	ts="$(date +%Y%m%d-%H%M%S)"
+	backup_dir="$STORE_BACKUP_DIR/$ts"
+	mkdir -p "$backup_dir"
+	for src_name in STORE_DIR STORE_ETC_DIR STORE_USR_DIR; do
+		local src="${!src_name}" tarname
+		tarname="$backup_dir/$(basename "$src").tar.gz"
+		[ -d "$src" ] || { info "WARNING: $src does not exist, skipping backup of it"; continue; }
+		sudo tar --xattrs --selinux --acls -czf "$tarname" -C "$(dirname "$src")" "$(basename "$src")"
+		sudo tar -tzf "$tarname" >/dev/null || die "backup tar for $src failed verification (tar -tzf)"
+		info "backed up $src -> $tarname ($(du -h "$tarname" | cut -f1))"
+	done
+
+	runbook="$backup_dir/RESTORE.txt"
+	cat > "$runbook" <<-EOF
+	RESTORE runbook for the $ts store-sync-apply attempt
+	=====================================================
+	Written before any live change was made. If the sync fails partway,
+	or verification fails after a real run, run this from a root shell
+	(a text console works -- no desktop/dbus required):
+
+	setenforce 0   # if not already permissive
+
+	cd $backup_dir
+	sudo rm -rf ${STORE_DIR} ${STORE_ETC_DIR} ${STORE_USR_DIR}
+	sudo tar --xattrs --selinux --acls -xzf $(basename "$STORE_DIR").tar.gz -C $(dirname "$STORE_DIR")
+	sudo tar --xattrs --selinux --acls -xzf $(basename "$STORE_ETC_DIR").tar.gz -C $(dirname "$STORE_ETC_DIR")
+	sudo tar --xattrs --selinux --acls -xzf $(basename "$STORE_USR_DIR").tar.gz -C $(dirname "$STORE_USR_DIR")
+
+	# S6: absolute path, not ~ -- this runs from a root shell, where ~
+	# means /root, not $HOME. Without this, the hook would still treat the
+	# restored (stale) store as synced and allow module ops against it.
+	sudo rm -f $STORE_MARKER
+
+	sudo load_policy
+	sesearch -A -s aide_t $RUNNING_POLICY | head -1   # sanity: command runs, some output
+	getenforce   # confirm still Permissive before trusting anything further
+
+	This restores exactly the pre-sync state of all three trees. It does
+	NOT restore booleans.local if 'semanage boolean -D' already ran --
+	re-set those 8 booleans by hand if needed (see the sync's own output
+	for the list, or ~/claude-readme/sonnet-5/MEMORY.md).
+	EOF
+	sudo cp "$runbook" "/root/store-sync-RESTORE-$ts.txt" 2>/dev/null \
+		&& info "RESTORE runbook also copied to /root/store-sync-RESTORE-$ts.txt (readable from a text console)" \
+		|| info "WARNING: could not copy RESTORE runbook to /root -- it's still at $runbook"
+	info "RESTORE runbook: $runbook"
+}
+
+store_build_modular() {
+	# B2: MONOLITHIC=n clean first, or the stale monolithic tmp/ poisons
+	# base.conf (this already happened once: a 57MB base.pp instead of
+	# the expected ~0.6MB). No sudo -- compiling needs none.
+	cd "$REPO"
+	make MONOLITHIC=n clean >/dev/null
+	make MONOLITHIC=n all >/dev/null
+
+	[ -f "$REPO/base.pp" ] || die "modular build did not produce base.pp"
+	local base_size
+	base_size="$(stat -c %s "$REPO/base.pp")"
+	[ "$base_size" -lt 1048576 ] || die "base.pp is ${base_size} bytes (>1MB) -- looks like the monolithic-tmp-poisoning bug (B2). Refusing."
+	grep -qa brave_xdg_cache_t "$REPO/base.pp" && die "base.pp contains brave_xdg_cache_t -- it should only be in brave's own module, another sign of B2 recurring."
+
+	local m missing=()
+	for m in $(store_tree_modules); do
+		[ "$m" = base ] && continue
+		[ -f "$REPO/$m.pp" ] || missing+=("$m")
+	done
+	[ "${#missing[@]}" -eq 0 ] || die "modular build did not produce: ${missing[*]}"
+
+	# Manifest: re-checked immediately before the real run so nothing can
+	# change between the dry run and the real one (B3's "pin the bytes").
+	# sha256sum -c's own format ("<hex>  <relative-path>"), so
+	# store_check_manifest can just run sha256sum -c from $REPO.
+	{
+		echo "$(sha256_of "$REPO/base.pp")  base.pp"
+		for m in $(store_tree_modules); do
+			[ "$m" = base ] && continue
+			echo "$(sha256_of "$REPO/$m.pp")  $m.pp"
+		done
+	} | sort -k2 > "$STATE_DIR/store-sync-manifest.sha256"
+	info "modular build OK: base.pp ($base_size bytes) + $(( $(store_tree_modules | wc -l) - 1 )) module packages"
+}
+
+store_check_manifest() {
+	(cd "$REPO" && sha256sum -c "$STATE_DIR/store-sync-manifest.sha256" --quiet)
+}
+
+# Populates the global STORE_SEMODULE_ARGS array with the pinned argv
+# (module installs + foreign removals), shared verbatim between the dry
+# run and the real run per B3 -- no -X anywhere, so everything lands/stays
+# at the store's existing priority 400.
+#
+# S3: built ONCE, right after cmd_store_sync_apply's step-4 assertion, from
+# the ALREADY-asserted STORE_LEGACY_MODULES -- never from a fresh
+# `store_foreign_modules` (live `semodule -l`) call at real-run time. `$(...)`
+# doesn't inherit `set -e`, so a transient semodule -l failure there would
+# silently produce an EMPTY -r list: the tree installs, nothing gets
+# removed, no error -- the exact pure-load failure mode B3 exists to avoid.
+# Also asserts the resulting argv has exactly 24 -r and 428 -i (1 base +
+# 427 tree modules), and logs a sha256 of the argv so real-run can confirm
+# nothing rebuilt it differently in between.
+store_build_argv() {
+	local tree_mods tree_count
+	tree_mods="$(store_tree_modules)"
+	tree_count="$(echo "$tree_mods" | wc -l)"
+
+	STORE_SEMODULE_ARGS=(-s "$POLICY_NAME")
+	local m
+	STORE_SEMODULE_ARGS+=(-i "$REPO/base.pp")
+	for m in $tree_mods; do
+		[ "$m" = base ] && continue
+		STORE_SEMODULE_ARGS+=(-i "$REPO/$m.pp")
+	done
+	for m in "${STORE_LEGACY_MODULES[@]}"; do
+		STORE_SEMODULE_ARGS+=(-r "$m")
+	done
+
+	local i_count r_count
+	i_count="$(printf '%s\n' "${STORE_SEMODULE_ARGS[@]}" | grep -c '^-i$')"
+	r_count="$(printf '%s\n' "${STORE_SEMODULE_ARGS[@]}" | grep -c '^-r$')"
+	[ "$i_count" -eq "$tree_count" ] || die "argv has $i_count -i flags, expected $tree_count (base + tree modules) -- refusing to build a mismatched commit."
+	[ "$r_count" -eq "${#STORE_LEGACY_MODULES[@]}" ] || die "argv has $r_count -r flags, expected ${#STORE_LEGACY_MODULES[@]} -- refusing to build a mismatched commit."
+
+	STORE_SEMODULE_ARGS_SHA="$(printf '%s\0' "${STORE_SEMODULE_ARGS[@]}" | sha256sum | cut -d' ' -f1)"
+	info "argv built: $i_count -i, $r_count -r (sha256 $STORE_SEMODULE_ARGS_SHA)"
+}
+
+store_dry_run() {
+	# S1: `sudo semodule` runs confined as semanage_t. Plain `mkdir` leaves
+	# the scratch parents user_home_t, and semanage_t only has getattr/
+	# open/search there -- it needs to CREATE subdirectories (e.g.
+	# <root>/var/lib/selinux/final) while Enforcing, which user_home_t
+	# denies. Use `sudo install -d` + chcon --reference against the real
+	# locations instead of a plain mkdir, and never chown the copy to the
+	# calling user (root needs to keep owning what it's about to write
+	# into). The files inside are root-owned after any run, so cleanup
+	# must be `sudo rm -rf` too, or a re-run dies under set -e.
+	sudo rm -rf "$STORE_SCRATCH_DIR"
+	local scratch_var_lib_selinux="$STORE_SCRATCH_DIR$(dirname "$STORE_DIR")"
+	local scratch_etc_selinux="$STORE_SCRATCH_DIR$(dirname "$STORE_ETC_DIR")"
+	sudo install -d -m 0755 "$scratch_var_lib_selinux" "$scratch_etc_selinux"
+	sudo chcon --reference=/var/lib/selinux "$scratch_var_lib_selinux"
+	sudo chcon --reference=/etc/selinux "$scratch_etc_selinux"
+	sudo cp -a "$STORE_DIR" "$scratch_var_lib_selinux/"
+	sudo cp -a "$STORE_ETC_DIR" "$scratch_etc_selinux/"
+
+	info "dry run: semodule ${STORE_SEMODULE_ARGS[*]} -p $STORE_SCRATCH_DIR -N"
+	sudo semodule "${STORE_SEMODULE_ARGS[@]}" -p "$STORE_SCRATCH_DIR" -N \
+		|| die "dry run FAILED -- see semodule's output above. Nothing live was touched."
+	info "dry run OK (scratch store at $STORE_SCRATCH_DIR, untouched by the real system)"
+}
+
+store_real_run() {
+	store_check_manifest || die "manifest changed since the build/dry-run step -- something modified base.pp or a module .pp between then and now. Refusing to run for real. Re-run from 'build_modular'."
+
+	# S3 defense-in-depth: the argv was built once (right after the step-4
+	# assertion); re-verify here, right before firing, that (a) nothing
+	# rebuilt STORE_SEMODULE_ARGS differently in the meantime (sha check)
+	# and (b) the live foreign set hasn't drifted from what it was built
+	# against -- the operator may have sat at the "yes" prompt for a while.
+	local current_sha
+	current_sha="$(printf '%s\0' "${STORE_SEMODULE_ARGS[@]}" | sha256sum | cut -d' ' -f1)"
+	[ "$current_sha" = "$STORE_SEMODULE_ARGS_SHA" ] || die "argv sha changed since it was built ($STORE_SEMODULE_ARGS_SHA -> $current_sha) -- refusing to run an argv that mutated underneath us."
+	local live_foreign_sorted expected_sorted
+	live_foreign_sorted="$(store_foreign_modules | sort -u)"
+	expected_sorted="$(printf '%s\n' "${STORE_LEGACY_MODULES[@]}" | sort -u)"
+	[ "$live_foreign_sorted" = "$expected_sorted" ] || die "live foreign-module set drifted since the argv was built -- refusing the real run. Start over from 'store-sync-dryrun'."
+
+	info "REAL run: semodule ${STORE_SEMODULE_ARGS[*]} -N"
+	sudo semodule "${STORE_SEMODULE_ARGS[@]}" -N \
+		|| die "REAL semodule commit FAILED or partially applied -- system may be in a 3-state (store old/new x /etc old/new) mixed state. DO NOT GUESS. Use the RESTORE runbook from step 2, then verify getenforce is still Permissive before doing anything else."
+
+	local post_commit
+	post_commit="$(store_commit_num)"
+	info "store commit_num is now $post_commit"
+
+	# -N above deliberately left the running kernel policy untouched as an
+	# extra checkpoint -- the commit is on disk (INSTALLED_POLICY reflects
+	# it) but not yet live. Load it now, explicitly, the same way cmd_load
+	# does, and confirm running == installed before calling this done.
+	# Safe regardless of gate state: we are Permissive at this point.
+	sudo load_policy || die "load_policy FAILED after a successful semodule commit -- on-disk policy is the new synced one, but the kernel is still running the old one. Use the RESTORE runbook, or investigate before retrying load_policy alone (do not re-run the semodule commit)."
+	local post_load_diff
+	post_load_diff="$(sediff --stats "$RUNNING_POLICY" "$INSTALLED_POLICY" 2>&1)"
+	[ -z "$post_load_diff" ] || die "post-load sediff is NOT empty -- running policy does not match installed after load_policy:
+$post_load_diff"
+	info "load_policy OK -- running policy now matches the synced installed policy"
+}
+
+store_verify_after_sync() {
+	# $1 = pre-sync commit_num (S4: commit_num must be exactly pre+1).
+	local pre_commit="$1"
+	# V4 fix: stdout only, exit code checked, no stderr-counts-as-found.
+	local ok=1
+	local out
+	if ! out="$(sesearch -A -s aide_t "$INSTALLED_POLICY" 2>/dev/null)"; then
+		info "VERIFY FAIL: sesearch against installed policy errored"
+		ok=0
+	elif [ -z "$out" ]; then
+		info "VERIFY FAIL: sesearch against installed policy returned nothing for aide_t (expected some rules)"
+		ok=0
+	fi
+
+	# S4/V1: module set == store_tree_modules in BOTH directions -- not
+	# just "no foreign left" (which alone would miss a tree module that
+	# silently failed to install).
+	local remaining missing_tree installed_sorted tree_sorted
+	remaining="$(store_foreign_modules)"
+	if [ -n "$remaining" ]; then
+		info "VERIFY FAIL: foreign modules still present after sync: $remaining"
+		ok=0
+	fi
+	installed_sorted="$(sudo semodule -l | sort -u)"
+	tree_sorted="$(store_tree_modules | sort -u)"
+	missing_tree="$(comm -23 <(echo "$tree_sorted") <(echo "$installed_sorted"))"
+	if [ -n "$missing_tree" ]; then
+		info "VERIFY FAIL: tree modules missing from the store after sync: $missing_tree"
+		ok=0
+	fi
+
+	# S4/V1: commit_num must be exactly pre+1 -- anything else means either
+	# nothing committed, or something else committed in between.
+	local post_commit expected_commit
+	post_commit="$(store_commit_num)"
+	expected_commit=$((pre_commit + 1))
+	if [ "$post_commit" != "$expected_commit" ]; then
+		info "VERIFY FAIL: commit_num is $post_commit, expected exactly $expected_commit (pre-sync was $pre_commit)"
+		ok=0
+	fi
+
+	# S4/V1: the real run's on-disk outputs must be byte-identical to what
+	# the dry run already produced against the scratch copy -- if they
+	# differ, the real store saw something the dry run didn't validate.
+	local f scratch_etc="$STORE_SCRATCH_DIR$STORE_ETC_DIR"
+	for f in policy/policy.35 contexts/files/file_contexts contexts/files/file_contexts.homedirs seusers; do
+		if [ ! -f "$scratch_etc/$f" ]; then
+			info "VERIFY FAIL: no dry-run copy of $f to compare against (was store-sync-dryrun run first?)"
+			ok=0
+			continue
+		fi
+		if ! sudo cmp -s "$scratch_etc/$f" "$STORE_ETC_DIR/$f"; then
+			info "VERIFY FAIL: $f differs between the dry run and the real run -- they should be byte-identical (V1)"
+			ok=0
+		fi
+	done
+	# V3-lite: fc/homedir presence sanity (a full type-aware compare is
+	# the CIL-vs-monolithic classifier this tool does not yet have --
+	# Opus's review is explicit that gate_check.py is NOT it; flagged as
+	# a follow-up, not silently skipped).
+	[ -f "$STORE_ETC_DIR/contexts/files/file_contexts" ] || { info "VERIFY FAIL: no file_contexts after sync"; ok=0; }
+	info "NOTE: this is a minimal verify pass (sesearch spot-check + module-set completeness + fc presence). Opus's full V1-V4 methodology (byte-identical dry-run-vs-real-run diff, the CIL-vs-monolithic classifier, contexts/ tree diff beyond files/) is NOT automated here yet -- run it by hand per review-store-sync-design.md before trusting this alone."
+	[ "$ok" -eq 1 ]
+}
+
+store_write_marker() {
+	mkdir -p "$(dirname "$STORE_MARKER")"
+	{
+		echo "synced_at=$(date -Iseconds)"
+		echo "store_policy_kern_sha256=$(sudo sha256sum "$STORE_DIR/active/policy.kern" 2>/dev/null | cut -d' ' -f1)"
+		echo "installed_policy_sha256=$(sha256_of "$INSTALLED_POLICY")"
+		echo "commit_num=$(store_commit_num)"
+	} > "$STORE_MARKER"
+	info "wrote $STORE_MARKER"
+}
 
 die() {
 	printf 'policy-cycle: ERROR: %s\n' "$*" >&2
@@ -91,7 +435,19 @@ cmd_build() {
 	cat "$BUILD_STAMP"
 }
 
+die_if_store_synced() {
+	# B6: once store-sync-apply succeeds, the store is authoritative and
+	# modular. The monolithic build/gate/install/load path would silently
+	# fight it (this exact bug is why tonight started) -- the gate would
+	# also become permanently NON-ADDITIVE (CIL vs checkpolicy
+	# representation), which is a correct result, not a bug to route
+	# around. All of them just refuse once the marker exists.
+	[ -f "$STORE_MARKER" ] && die "the store has been synced ($STORE_MARKER exists) -- '$1' is the monolithic path and is retired. Use the modular tools (semodule, or a future modular-aware subcommand here) instead."
+	return 0
+}
+
 cmd_gate() {
+	die_if_store_synced gate
 	[ -f "$BUILD_STAMP" ] || die "no build stamp -- run 'build' first"
 	[ -f "$BUILD_POLICY" ] || die "no $BUILD_POLICY -- run 'build' first"
 
@@ -173,6 +529,7 @@ cmd_gate() {
 }
 
 cmd_install() {
+	die_if_store_synced install
 	[ -f "$BUILD_POLICY" ] || die "no $BUILD_POLICY -- run 'build' first"
 	[ -f "$BUILD_STAMP" ] || die "no build stamp -- run 'build' first"
 	[ -f "$GATE_STAMP" ] || die "no gate stamp -- run 'gate' first (installing an ungated build is exactly the mistake this tool exists to prevent)"
@@ -248,6 +605,7 @@ cmd_install() {
 }
 
 cmd_load() {
+	die_if_store_synced load
 	[ -f "$GATE_STAMP" ] || die "no gate stamp -- run 'gate' first"
 	[ -f "$INSTALLED_POLICY" ] || die "nothing installed -- run 'install' first"
 
@@ -357,6 +715,363 @@ cmd_commit() {
 	echo "git commit -m \"<summary>\" -m \"<body>\" -m \"Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\""
 }
 
+cmd_store_sync_plan() {
+	# Read-only. Never mutates anything -- safe to run and re-run freely.
+	# Computes the actual foreign-module set live (the same computation
+	# `make pure-load` does internally) and cross-checks it against the
+	# hardcoded STORE_LEGACY_MODULES list from the 2026-09-26 audit, so
+	# drift is caught here instead of inside a live transaction.
+	[ -f "$STORE_MARKER" ] && info "NOTE: $STORE_MARKER already exists -- a sync may have already run, or it was created some other way."
+
+	local foreign expected_sorted foreign_sorted
+	foreign="$(store_foreign_modules)"
+	expected_sorted="$(printf '%s\n' "${STORE_LEGACY_MODULES[@]}" | sort -u)"
+	foreign_sorted="$(echo "$foreign" | sort -u)"
+
+	info "live foreign-module set (semodule -l minus modules.conf's base+module entries):"
+	echo "$foreign" | sed 's/^/  - /'
+	echo
+
+	if [ "$foreign_sorted" = "$expected_sorted" ]; then
+		info "MATCHES the 2026-09-26 audit's 24-module list exactly -- safe to plan against."
+	else
+		info "DOES NOT MATCH the audit's list -- the store has drifted. diff (< expected, > live):"
+		diff <(echo "$expected_sorted") <(echo "$foreign_sorted") || true
+		info "store-sync-apply would refuse to run until this is reconciled."
+	fi
+
+	echo
+	info "store-sync-apply (implemented, pending Opus's review before whitewhistle runs it for real) does, in order:"
+	echo "  1. lock (flock, R6) + refuse if marker exists, pacman is running, or db.lck is present (R4)"
+	echo "  2. backup ALL THREE trees: $STORE_DIR, $STORE_ETC_DIR, $STORE_USR_DIR"
+	echo "     (tar --xattrs --selinux --acls, timestamped, tar -tzf verified, RESTORE runbook written"
+	echo "     alongside the backup and copied to /root/ for console readability)"
+	echo "  3. unprivileged modular build: 'make MONOLITHIC=n clean' first (B2 -- a stale monolithic"
+	echo "     tmp/ silently poisons base.conf), then 'make MONOLITHIC=n all' (base.pp + every tree"
+	echo "     module .pp), sha256 manifest of all of it pinned for step 6 to re-check"
+	echo "  4. re-assert the live foreign-module set == the known 24 (shown above) -- abort if drifted"
+	echo "  5. dry run: copy the live store+etc into a scratch dir, then the SAME pinned semodule argv"
+	echo "     as step 6 with '-p <scratch> -N' added -- same mechanism as 'make validate'"
+	echo "     (Rules.modular:229), zero live risk. Must succeed before step 6 runs for real."
+	echo "  6. operator confirmation, then 'sudo setenforce 0', then the REAL run: a single pinned"
+	echo "     'semodule -s $POLICY_NAME -i base.pp -i <every tree module.pp> -r <the 24> -N'"
+	echo "     (default priority 400, matching the store's existing modules -- never -X 100, which"
+	echo "     would be silently shadowed by the 428 stale priority-400 copies and change nothing)."
+	echo "     Manifest re-checked immediately before this runs (B3's 'pin the bytes'). '-N' keeps this"
+	echo "     an on-disk-only commit as an extra checkpoint; 'sudo load_policy' + a post-load sediff"
+	echo "     check against \$RUNNING_POLICY (must be empty) then makes it live, same as 'cmd_load'."
+	echo "  7. verify: module-set completeness, sesearch spot-check, fc presence (full V1-V4 -- byte-"
+	echo "     identical dry-run-vs-real-run diff and the CIL-vs-monolithic classifier -- is manual"
+	echo "     for now, per review-store-sync-design.md; not yet automated here)"
+	echo "  8. 'sudo semanage boolean -D' (clear the store's 8 stale booleans.local entries --"
+	echo "     booleans.conf already compiles all of them true, whitewhistle approved this), then"
+	echo "     write $STORE_MARKER only if 1-7 all succeeded"
+	echo "  Does NOT setenforce 1 at any point -- stays permissive until a verified reboot (R5)."
+	echo "  Does NOT run 'sudo make pure-load' or 'sudo setsebool -P' -- both retracted in review"
+	echo "  (pure-load's foreign-list comes from a shell-out that fails open to empty; setsebool -P"
+	echo "  would pin booleans.local again, contradicting booleans.conf as the source of truth)."
+}
+
+cmd_store_sync_dryrun() {
+	# S2: build + assertion + dry run + automatic checks. NO backup, NO
+	# setenforce, NO live change of any kind -- reads the live store only
+	# to copy it into a scratch dir. Safe for anyone (Opus included) to run
+	# and re-run freely; not blocked by the hook, since it never calls
+	# semodule/semanage/setsebool against the real store.
+	echo "=== dryrun 1/4: unprivileged modular build ==="
+	store_build_modular
+
+	echo "=== dryrun 2/4: foreign-module assertion against the known 24 ==="
+	local foreign_sorted expected_sorted
+	foreign_sorted="$(store_foreign_modules | sort -u)"
+	expected_sorted="$(printf '%s\n' "${STORE_LEGACY_MODULES[@]}" | sort -u)"
+	if [ "$foreign_sorted" != "$expected_sorted" ]; then
+		diff <(echo "$expected_sorted") <(echo "$foreign_sorted") || true
+		die "live foreign-module set no longer matches the known 24 -- store has drifted. Refusing."
+	fi
+	info "foreign-module set matches exactly: ${STORE_LEGACY_MODULES[*]}"
+	store_build_argv
+
+	echo "=== dryrun 3/4: dry run (scratch copy of the real store, --noreload) ==="
+	store_dry_run
+
+	echo "=== dryrun 4/4: automatic checks ==="
+	local ok=1
+	local scratch_policy="$STORE_SCRATCH_DIR$STORE_ETC_DIR/policy/policy.35"
+	[ -f "$scratch_policy" ] || die "dry run did not produce $scratch_policy"
+
+	info "module count in the scratch store (expect $(store_tree_modules | wc -l)):"
+	local scratch_count
+	scratch_count="$(sudo semodule -s "$POLICY_NAME" -p "$STORE_SCRATCH_DIR" -l | wc -l)"
+	echo "  got: $scratch_count"
+	[ "$scratch_count" -eq "$(store_tree_modules | wc -l)" ] || { info "CHECK FAIL: module count mismatch"; ok=0; }
+
+	info "V2 classifier (installed vs dry-run policy.35) -- see tools/store_sync_classify.py for what this checks:"
+	local classify_out classify_verdict
+	classify_out="$(python3 "$REPO/tools/store_sync_classify.py" "$INSTALLED_POLICY" "$scratch_policy")"
+	classify_verdict="$(head -1 <<< "$classify_out")"
+	echo "$classify_out"
+	[ "$classify_verdict" = "PASS" ] || ok=0
+
+	# V3 (Opus): everything the classifier doesn't cover because it isn't
+	# in policy.35 at all -- contexts/ outside files/ (customizable_types,
+	# etc.), file_contexts (alias-normalized), homedirs, seusers.
+	local scratch_etc="$STORE_SCRATCH_DIR$STORE_ETC_DIR"
+
+	info "V3: contexts/ outside contexts/files/ (customizable_types, etc.)"
+	local ctx_diff
+	ctx_diff="$(sudo diff -rq --exclude=files "$STORE_ETC_DIR/contexts" "$scratch_etc/contexts" 2>&1)"
+	if [ -n "$ctx_diff" ]; then
+		info "CHECK FAIL: contexts/ (outside files/) differs:"
+		echo "$ctx_diff"
+		ok=0
+	else
+		info "  identical"
+	fi
+
+	# Opus's dryrun #2 finding: this policy is non-MLS, so a context ends at
+	# "...:type" with no trailing ":s0" -- the old ":[a-z_0-9]+_t:" regex
+	# required a colon AFTER the type (implicitly assuming an MLS level)
+	# and matched nothing, and under `set -euo pipefail` an empty grep in a
+	# command substitution silently killed the whole subcommand. Extract
+	# the type from the LAST whitespace field (context) by its 3rd colon
+	# field instead -- works with or without an MLS suffix -- and skip
+	# "<<none>>" contexts (no default assigned, not a real type).
+	fc_ctx_type() { local ctx; ctx="$(awk '{print $NF}' <<<"$1")"; [ "$ctx" = "<<none>>" ] && return 1; cut -s -d: -f3 <<<"$ctx"; }
+	fc_key() { awk '{NF--; print}' <<<"$1"; }  # everything except the context field
+	# Opus's dryrun #3 finding: `seinfo -t A -x` prints A's alias-vs-primary
+	# definition as ONE line ("type PRIMARY alias ALIAS1, ALIAS2, ...;"),
+	# never a line consisting of just the other name -- so a `grep -qx`
+	# for the other name can never match, in either direction. Querying
+	# either an alias or its primary type returns the SAME line; take the
+	# primary type name (the token right after "type") as the canonical
+	# form and compare that instead of grepping for the other name.
+	fc_canon_type() { seinfo -t "$1" -x "$INSTALLED_POLICY" 2>/dev/null | awk '$1=="type"{print $2; exit}'; }
+
+	info "V3: file_contexts, whitespace-normalized set diff (alias swaps only, resolved via seinfo)"
+	local fc_only_installed fc_only_scratch bad_fc_lines=()
+	fc_only_installed="$(sudo awk '{$1=$1};1' "$STORE_ETC_DIR/contexts/files/file_contexts" | sort -u)"
+	fc_only_scratch="$(sudo awk '{$1=$1};1' "$scratch_etc/contexts/files/file_contexts" | sort -u)"
+	local removed_lines added_lines
+	removed_lines="$(comm -23 <(echo "$fc_only_installed") <(echo "$fc_only_scratch"))"
+	added_lines="$(comm -13 <(echo "$fc_only_installed") <(echo "$fc_only_scratch"))"
+	if [ -z "$removed_lines$added_lines" ]; then
+		info "  identical (0 differing lines)"
+	else
+		# Pair by key (everything but the context): an alias<->primary type
+		# swap on the SAME path+filetype is fine if seinfo confirms the
+		# alias relationship; anything else (a path only on one side, or a
+		# real type change seinfo doesn't recognize as an alias pair) fails.
+		local key old_type new_type old_line found
+		while IFS= read -r line; do
+			[ -z "$line" ] && continue
+			key="$(fc_key "$line")"
+			old_type="$(fc_ctx_type "$line")" || { bad_fc_lines+=("removed line has <<none>> or unparseable context: $line"); continue; }
+			found=0
+			while IFS= read -r cand; do
+				[ -z "$cand" ] && continue
+				[ "$(fc_key "$cand")" = "$key" ] || continue
+				found=1
+				old_line="$cand"
+				break
+			done <<< "$added_lines"
+			if [ "$found" -eq 0 ]; then
+				bad_fc_lines+=("removed, no corresponding added line for: $line")
+				continue
+			fi
+			new_type="$(fc_ctx_type "$old_line")" || { bad_fc_lines+=("added line has <<none>> or unparseable context: $old_line"); continue; }
+			if [ -z "$old_type" ] || [ -z "$new_type" ]; then
+				bad_fc_lines+=("could not extract types to compare: $line")
+				continue
+			fi
+			local old_canon new_canon
+			old_canon="$(fc_canon_type "$old_type")"
+			new_canon="$(fc_canon_type "$new_type")"
+			if [ -z "$old_canon" ] || [ "$old_canon" != "$new_canon" ]; then
+				bad_fc_lines+=("$old_type <-> $new_type on $key is not an alias pair per seinfo (canon: '$old_canon' vs '$new_canon')")
+			fi
+		done <<< "$removed_lines"
+
+		# Opus's dryrun #3 fail-open: only removed_lines was walked, so a
+		# path present ONLY in the dry run (no removed counterpart at all)
+		# was never checked. Walk added_lines symmetrically, and also
+		# require equal counts as a cheap independent cross-check.
+		local removed_count added_count
+		removed_count="$(grep -c . <<< "$removed_lines" || true)"
+		added_count="$(grep -c . <<< "$added_lines" || true)"
+		if [ "${removed_count:-0}" != "${added_count:-0}" ]; then
+			bad_fc_lines+=("removed_lines has $removed_count entries but added_lines has $added_count -- not a 1:1 swap set")
+		fi
+		while IFS= read -r line; do
+			[ -z "$line" ] && continue
+			key="$(fc_key "$line")"
+			found=0
+			while IFS= read -r cand; do
+				[ -z "$cand" ] && continue
+				[ "$(fc_key "$cand")" = "$key" ] && { found=1; break; }
+			done <<< "$removed_lines"
+			[ "$found" -eq 1 ] || bad_fc_lines+=("added, no corresponding removed line for: $line")
+		done <<< "$added_lines"
+
+		if [ "${#bad_fc_lines[@]}" -gt 0 ]; then
+			info "CHECK FAIL: file_contexts has unexplained differences:"
+			printf '  %s\n' "${bad_fc_lines[@]}"
+			ok=0
+		else
+			info "  $removed_count differing line(s), all confirmed alias<->primary-type swaps via seinfo"
+		fi
+	fi
+
+	info "V3: file_contexts.homedirs -- scratch's type vocabulary must be a subset of installed's"
+	local homedirs_types_installed homedirs_types_scratch extra_types
+	# Skip comment/blank lines before extracting -- otherwise `cut -d: -f3`
+	# on a delimiter-less line (a comment) echoes the WHOLE line back
+	# unchanged (GNU cut's default when -s isn't given), polluting the
+	# type set with garbage that isn't a type at all.
+	homedirs_types_installed="$(sudo grep -vE '^\s*(#|$)' "$STORE_ETC_DIR/contexts/files/file_contexts.homedirs" 2>/dev/null | awk '{print $NF}' | grep -v '^<<none>>$' | cut -s -d: -f3 | sort -u)"
+	homedirs_types_scratch="$(sudo grep -vE '^\s*(#|$)' "$scratch_etc/contexts/files/file_contexts.homedirs" 2>/dev/null | awk '{print $NF}' | grep -v '^<<none>>$' | cut -s -d: -f3 | sort -u)"
+	extra_types="$(comm -23 <(echo "$homedirs_types_scratch") <(echo "$homedirs_types_installed"))"
+	if [ -n "$extra_types" ]; then
+		info "CHECK FAIL: homedirs uses type(s) not present in the installed homedirs: $extra_types"
+		ok=0
+	else
+		info "  OK (no new types, per-user role blocks aside)"
+	fi
+
+	info "V3: seusers"
+	if sudo cmp -s "$STORE_ETC_DIR/seusers" "$scratch_etc/seusers"; then
+		info "  identical"
+	else
+		info "CHECK FAIL: seusers differs"
+		sudo diff "$STORE_ETC_DIR/seusers" "$scratch_etc/seusers" || true
+		ok=0
+	fi
+
+	echo
+	if [ "$ok" -eq 1 ]; then
+		info "DRYRUN CHECKS: PASS -- safe for a human (or Opus) to review this output before 'store-sync-apply' is run for real."
+	else
+		info "DRYRUN CHECKS: FAIL -- see reasons above. Do not proceed to store-sync-apply until these are understood and resolved."
+	fi
+	[ "$ok" -eq 1 ]
+}
+
+cmd_store_sync_apply() {
+	# Implements Opus's 2026-09-26 store-sync-design review (B1-B6, R1-R6,
+	# V1-V4 -- ~/claude-readme/opus-5-5/review-store-sync-design.md).
+	# NOT reviewed live end-to-end yet: written to be run by whitewhistle
+	# directly in a terminal (R3 -- the 600s Bash-tool timeout is a real
+	# risk for a privileged, possibly-slow commit), after Opus reviews this
+	# script itself, same process as every other change tonight.
+	[ "$(id -u)" -eq 0 ] && die "run this as your normal user (with sudo available), not as root -- ownership assumptions in the backup step rely on it."
+	command -v flock >/dev/null || die "flock not found"
+
+	mkdir -p "$STATE_DIR"
+	exec 9>"$STORE_LOCK_FILE"
+	flock -n 9 || die "another store-sync-apply (or something holding $STORE_LOCK_FILE) is already running -- R6: mutual exclusion while this runs."
+
+	[ -f "$STORE_MARKER" ] && die "already synced ($STORE_MARKER exists). Delete it by hand first if you deliberately want to re-run this -- it is not done automatically."
+
+	# R4: pacman precondition. Its selinux-refpolicy-{arch,git} scriptlets
+	# call semodule -i without --noreload; a concurrent transaction could
+	# live-load an unrelated, ungated policy mid-sync.
+	pgrep -x pacman >/dev/null 2>&1 && die "pacman is currently running -- wait for it to finish first (R4)."
+	[ -f /var/lib/pacman/db.lck ] && die "pacman db.lck is present -- a transaction may be mid-flight or crashed. Resolve that before syncing (R4)."
+
+	echo "=== 1/8: pre-state ==="
+	local pre_commit
+	pre_commit="$(store_commit_num)"
+	info "pre-sync commit_num=$pre_commit, enforce=$(getenforce)"
+
+	echo "=== 2/8: backup (var/lib, etc, usr/share) ==="
+	store_backup_all
+
+	echo "=== 3/8: unprivileged modular build (MONOLITHIC=n clean first -- B2) ==="
+	store_build_modular
+
+	echo "=== 4/8: foreign-module assertion against the known 24 ==="
+	local foreign_sorted expected_sorted
+	foreign_sorted="$(store_foreign_modules | sort -u)"
+	expected_sorted="$(printf '%s\n' "${STORE_LEGACY_MODULES[@]}" | sort -u)"
+	if [ "$foreign_sorted" != "$expected_sorted" ]; then
+		echo "$foreign_sorted" > "$STATE_DIR/store-sync-foreign-live.txt"
+		echo "$expected_sorted" > "$STATE_DIR/store-sync-foreign-expected.txt"
+		diff "$STATE_DIR/store-sync-foreign-expected.txt" "$STATE_DIR/store-sync-foreign-live.txt" || true
+		die "live foreign-module set no longer matches the known 24 (diff above) -- store has drifted since the audit. Refusing. Re-run 'store-sync-plan' first."
+	fi
+	info "foreign-module set matches exactly: ${STORE_LEGACY_MODULES[*]}"
+
+	# S3: build the pinned argv exactly once, right here, from the
+	# assertion just made -- both the dry run and the real run reuse this
+	# same array (and re-verify its sha), never re-querying semodule -l.
+	store_build_argv
+
+	echo "=== 5/8: dry run (scratch copy of the real store, --noreload, zero live risk) ==="
+	store_dry_run
+
+	local dryrun_classify dryrun_verdict
+	dryrun_classify="$(python3 "$REPO/tools/store_sync_classify.py" "$INSTALLED_POLICY" "$STORE_SCRATCH_DIR$STORE_ETC_DIR/policy/policy.35")"
+	dryrun_verdict="$(head -1 <<< "$dryrun_classify")"
+	echo "$dryrun_classify"
+	[ "$dryrun_verdict" = "PASS" ] || die "dry-run classifier verdict is $dryrun_verdict (see reasons above) -- refusing to proceed to the real run. Run 'store-sync-dryrun' separately to investigate without any live risk."
+
+	echo "=== 6/8: setenforce 0, then the REAL run -- this is the live, privileged commit ==="
+	echo "About to set the system Permissive and run the pinned semodule commit against the REAL store."
+	echo "Pre-sync commit_num=$pre_commit. This will remove: ${STORE_LEGACY_MODULES[*]}"
+	read -r -p "Type 'yes' to proceed, anything else aborts: " confirm
+	[ "$confirm" = "yes" ] || die "aborted by operator before the real run -- nothing live was touched."
+	sudo setenforce 0
+	[ "$(getenforce)" = "Permissive" ] || die "setenforce 0 did not take effect (getenforce reports $(getenforce)) -- refusing to proceed with the real run while Enforcing."
+	store_real_run
+
+	echo "=== 7/8: verify ==="
+	if ! store_verify_after_sync "$pre_commit"; then
+		die "VERIFICATION FAILED after the real run -- system is in an uncertain state. Do NOT setenforce 1. See the RESTORE runbook printed in step 2 (also under $STORE_BACKUP_DIR). Marker NOT written."
+	fi
+
+	echo "=== 8/8: clear booleans.local, write marker ==="
+	# whitewhistle-approved: booleans.conf already compiles all 10 true in
+	# the modular build (confirmed: seinfo -b NAME -x base.pp/module .pp),
+	# so the store's 8 stale booleans.local overrides are now redundant
+	# and, per the git-is-source-of-truth decision, should go.
+	local pre_clear_sha
+	pre_clear_sha="$(sha256_of "$INSTALLED_POLICY")"
+	sudo semanage boolean -D
+
+	# S5: `semanage boolean -D` recompiles and reloads on its own -- verify
+	# it landed cleanly before trusting it enough to write the marker.
+	local post_clear_diff booleans_local_path b
+	post_clear_diff="$(sediff --stats "$RUNNING_POLICY" "$INSTALLED_POLICY" 2>&1)"
+	[ -z "$post_clear_diff" ] || die "post-'semanage boolean -D' sediff is NOT empty -- running policy does not match installed:
+$post_clear_diff"
+	[ "$(sha256_of "$INSTALLED_POLICY")" = "$pre_clear_sha" ] \
+		|| die "installed policy.35 changed after 'semanage boolean -D' -- expected byte-identical, since all 8 cleared booleans already equalled their compiled defaults. Do NOT write the marker; investigate before retrying."
+	for b in "${STORE_INTENDED_TRUE_BOOLEANS[@]}"; do
+		getsebool "$b" 2>/dev/null | grep -q "on$" \
+			|| die "$b is not 'on' after clearing booleans.local -- compiled default didn't take. Do NOT write the marker."
+	done
+	getsebool allow_execmod 2>/dev/null | grep -q "off$" \
+		|| die "allow_execmod is not 'off' after clearing booleans.local -- expected its compiled default. Do NOT write the marker."
+	booleans_local_path="$(sudo find "$STORE_DIR" -maxdepth 3 -iname booleans.local 2>/dev/null | head -1)"
+	if [ -n "$booleans_local_path" ]; then
+		local remaining_booleans
+		# `grep -c` already prints "0" on no match but exits 1 -- the old
+		# `|| echo 0` fallback then ALSO fired and appended a second "0",
+		# giving "0\n0" and breaking the -eq test below (Opus, dryrun #2:
+		# reproduced as apply dying on this exact line in the success case,
+		# right after the real sync had already succeeded).
+		remaining_booleans="$(sudo grep -vc '^#\|^$' "$booleans_local_path" 2>/dev/null || true)"
+		remaining_booleans="${remaining_booleans:-0}"
+		[ "$remaining_booleans" -eq 0 ] || die "booleans.local ($booleans_local_path) is not empty after 'semanage boolean -D' ($remaining_booleans entries remain). Do NOT write the marker."
+	fi
+	info "post-clear verify OK: running==installed, policy.35 unchanged, all 10 booleans at their compiled defaults, booleans.local empty"
+
+	store_write_marker
+
+	info "Sync complete. Store commit_num: $(store_commit_num) (was $pre_commit)."
+	info "System remains Permissive by design -- do NOT setenforce 1 until after a verified reboot (R5). The monolithic build/gate/install/load subcommands are now retired (they die when $STORE_MARKER exists)."
+}
+
 case "${1:-}" in
 	build) shift; cmd_build "$@" ;;
 	gate) shift; cmd_gate "$@" ;;
@@ -365,8 +1080,11 @@ case "${1:-}" in
 	verify) shift; cmd_verify "$@" ;;
 	verify-bool) shift; cmd_verify_bool "$@" ;;
 	commit) shift; cmd_commit "$@" ;;
+	store-sync-plan) shift; cmd_store_sync_plan "$@" ;;
+	store-sync-dryrun) shift; cmd_store_sync_dryrun "$@" ;;
+	store-sync-apply) shift; cmd_store_sync_apply "$@" ;;
 	*)
-		echo "usage: policy-cycle.sh {build|gate|install|load|verify <sesearch-args>|verify-bool <name>|commit}"
+		echo "usage: policy-cycle.sh {build|gate|install|load|verify <sesearch-args>|verify-bool <name>|commit|store-sync-plan|store-sync-dryrun|store-sync-apply}"
 		exit 1
 		;;
 esac

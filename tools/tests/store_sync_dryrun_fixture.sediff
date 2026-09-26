@@ -1,0 +1,4520 @@
+Types (0 Added, 0 Removed, 1308 Modified)
+   Modified Types: 1308
+      * NetworkManager_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+          - mlsfileread
+      * abrt_dump_oops_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * abrt_handle_event_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * abrt_helper_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * abrt_retrace_coredump_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * abrt_retrace_worker_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * abrt_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * abrt_upload_watch_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * abrt_watch_log_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * accountsd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * acct_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * acngtool_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * acpi_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * acpid_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * adb_shell_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * adbd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * admin_crontab_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * admin_crontab_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * admin_mail_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * adsprpcd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * afs_bosserver_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * afs_fsserver_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * afs_kaserver_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * afs_ptserver_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * afs_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * afs_vlserver_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * aide_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * aisexec_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * alsa_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * alsa_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * amanda_recover_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * amanda_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * amavis_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * amtu_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * anaconda_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * anon_inodefs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * anon_sftpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * apcupsd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * apt_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * aptcacher_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * arpwatch_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * asterisk_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * audisp_remote_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * audisp_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilewrite
+      * audit_spool_t (1 Removed attributes)
+          Attributes:
+          - security_file_type
+      * auditadm_dbusd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * auditadm_docportal_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * auditadm_screen_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * auditadm_su_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilewrite
+          - ubac_constrained_type
+      * auditadm_sudo_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * auditadm_systemd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * auditadm_systemd_tmpfiles_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * auditadm_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * auditctl_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+      * auditd_etc_t (1 Removed attributes)
+          Attributes:
+          - security_file_type
+      * auditd_log_t (1 Removed attributes)
+          Attributes:
+          - security_file_type
+      * auditd_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewrite
+      * autofs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * automount_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * automount_tmp_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * avacore_discord_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * avacore_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * avahi_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * awstats_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * backup_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * bacula_admin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * bacula_store_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * bacula_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * binfmt_misc_fs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * bird_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * bitlbee_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * blkmapd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * blktap_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * blueman_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * bluetooth_helper_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * bluetooth_helper_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * bluetooth_helper_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * bluetooth_helper_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * bluetooth_helper_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * bluetooth_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * boinc_project_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * boinc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * boolean_t (7 Added attributes)
+          Attributes:
+          + base_typeattr_14
+          + cloudinit_typeattr_1
+          + init_typeattr_2
+          + puppet_typeattr_1
+          + secadm_typeattr_1
+          + selinuxutil_typeattr_2
+          + sysadm_typeattr_1
+      * boot_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * bootloader_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewrite
+      * bpf_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * brave_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * brave_naclhelper_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mmap_low_domain_type
+      * brave_sandbox_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * brave_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - set_curr_context
+          - ubac_constrained_type
+      * brave_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * brave_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * brave_widevine_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * brave_xdg_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * brave_xdg_config_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * brave_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * brctl_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cachefiles_kernel_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cachefilesd_cache_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * cachefilesd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * calamaris_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * canna_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * capifs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * cdrecord_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * cdsprpcd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * certbot_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * certmaster_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * certmonger_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+      * certwatch_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cfengine_execd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cfengine_monitord_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cfengine_serverd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cgclear_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cgconfig_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cgmanager_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cgred_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cgroup_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * checkpc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * checkpolicy_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - can_write_binary_policy
+      * chfn_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * chkpwd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * chkrootkit_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * chromium_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * chromium_naclhelper_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mmap_low_domain_type
+      * chromium_sandbox_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * chromium_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - set_curr_context
+          - ubac_constrained_type
+      * chromium_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * chromium_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * chromium_xdg_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * chromium_xdg_config_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * chromium_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * chronyc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * chronyd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cifs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * clamd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * clamscan_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cloud_init_runtime_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * cloud_init_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cobblerd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+      * cockpit_cert_manage_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cockpit_session_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfdshare
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+          - mlsprocsetsl
+      * cockpit_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * cockpit_ws_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * collectd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * colord_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * comsat_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * condor_collector_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * condor_master_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * condor_negotiator_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * condor_procd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * condor_schedd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * condor_startd_ssh_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * condor_startd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mcssetcats
+      * consolesetup_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * consoletype_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewrite
+      * container_cache_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * container_conf_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * container_data_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * container_engine_t (1 Added attributes,3 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilereadtoclr
+          - mlsfilewritetoclr
+          - mlstrustedobject
+      * container_file_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * container_init_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mcs_constrained_type
+          - mlsrangetrans
+      * container_kvm_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mcs_constrained_type
+          - mlsrangetrans
+      * container_ro_file_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * container_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mcs_constrained_type
+          - mlsrangetrans
+      * container_user_runtime_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * corosync_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * couchdb_js_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * couchdb_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * courier_authdaemon_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * courier_pcp_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * courier_pop_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * courier_sqwebmail_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * courier_tcpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cpucontrol_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cpufreqselector_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cpuspeed_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * crack_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * crio_conmon_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * crio_t (1 Added attributes,3 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilereadtoclr
+          - mlsfilewritetoclr
+          - mlstrustedobject
+      * crond_t (1 Added attributes,5 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfdshare
+          - mlsfileread
+          - mlsfilewrite
+          - mlsprocsetsl
+          - mlstrustedobject
+      * cronjob_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * crontab_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * crontab_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * cryfs_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * ctdbd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+      * cups_pdf_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cupsd_config_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cupsd_lpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cupsd_runtime_t (1 Removed attributes)
+          Attributes:
+          - mlstrustedobject
+      * cupsd_t (1 Added attributes,7 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfduse
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfilewrite
+          - mlsnetwrite
+          - mlsrangetrans
+          - mlstrustedobject
+      * cvs_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cyphesis_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * cyrus_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dante_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dbadm_dbusd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * dbadm_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - dbadm_application_exec_domain
+          - ubac_constrained_type
+      * dbskkd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dcerpcd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ddclient_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * debugfs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * default_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * device_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * devicekit_disk_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewritetoclr
+      * devicekit_power_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+      * devicekit_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * devlog_t (1 Removed attributes)
+          Attributes:
+          - mlstrustedobject
+      * devpts_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * devtty_t (1 Removed attributes)
+          Attributes:
+          - mlstrustedobject
+      * dhcpc_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+      * dhcpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dictd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dirmngr_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * dirmngr_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dirmngr_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * disk_munin_plugin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * disk_munin_plugin_tmp_t (1 Removed attributes)
+          Attributes:
+          - munin_plugin_tmp_content
+      * distccd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * djbdns_axfrdns_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * djbdns_dnscache_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * djbdns_tinydns_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dkim_milter_private_key_t (1 Removed attributes)
+          Attributes:
+          - security_file_type
+      * dkim_milter_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dmesg_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dmidecode_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+      * dmrc_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * dnsmasq_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dnssec_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + init_typeattr_1
+          - security_file_type
+      * dockerc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dockerc_user_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dockerd_t (1 Added attributes,3 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilereadtoclr
+          - mlsfilewritetoclr
+          - mlstrustedobject
+      * dockerd_user_t (1 Added attributes,3 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilereadtoclr
+          - mlsfilewritetoclr
+          - mlstrustedobject
+      * dosfs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * dovecot_auth_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dovecot_deliver_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dovecot_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dphysswapfile_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * dpkg_script_t (4 Removed attributes)
+          Attributes:
+          - initrc_transition_domain
+          - mlsfileread
+          - mlsfilewrite
+          - set_curr_context
+      * dpkg_t (6 Removed attributes)
+          Attributes:
+          - can_write_binary_policy
+          - initrc_transition_domain
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+          - set_curr_context
+      * drbd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ecryptfs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * efivarfs_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + init_typeattr_1
+          - pseudofs
+      * eg25manager_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * entropyd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * etc_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * eventlogd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * evolution_alarm_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_alarm_orbit_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_alarm_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * evolution_alarm_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_alarm_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_exchange_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_exchange_orbit_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_exchange_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * evolution_exchange_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_exchange_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_exchange_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_orbit_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_server_orbit_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_server_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * evolution_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * evolution_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_webcal_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_webcal_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * evolution_webcal_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_webcal_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_xdg_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_xdg_config_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_xdg_data_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evolution_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * evtchnd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * exim_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * fagenrules_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * fail2ban_client_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * fail2ban_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * fakehwclock_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * fapolicyc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * fapolicyd_compiled_rules_t (1 Removed attributes)
+          Attributes:
+          - security_file_type
+      * fapolicyd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * fcoemon_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * fetchmail_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * fetchmail_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * fingerd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * firewalld_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * firstboot_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * fprintd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * freshclam_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * fsadm_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewrite
+      * fsdaemon_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+      * ftpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ftpdctl_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * fusefs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * fwupd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * fwupdmgr_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * games_data_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * games_devpts_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * games_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * games_srv_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * games_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * games_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * games_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * games_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gatekeeper_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * gcc_config_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * gconf_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gconf_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gconfd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * gdomap_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * gdsprpcd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * geoclue_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * getty_t (1 Added attributes,3 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mcssetcats
+          - mlsfileread
+          - mlsfilewrite
+      * git_home_hook_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * git_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * git_session_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * git_system_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * git_user_content_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * git_xdg_config_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gitosis_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * glance_api_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * glance_registry_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * glusterd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * gnome_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gnome_keyring_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gnome_keyring_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gnome_xdg_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gnome_xdg_config_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gnome_xdg_data_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gnomeclock_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+      * gpg_agent_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * gpg_agent_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gpg_helper_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * gpg_pinentry_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gpg_pinentry_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * gpg_pinentry_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gpg_pinentry_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gpg_pinentry_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gpg_runtime_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gpg_secret_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * gpg_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * gpm_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * gpsd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * greylist_milter_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * groupadd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * gssd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * gssproxy_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * gstreamer_orcexec_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * guest_dbusd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * guest_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - guest_application_exec_domain
+          - ubac_constrained_type
+      * hadoop_datanode_initrc_exec_t (1 Removed attributes)
+          Attributes:
+          - hadoop_init_script_file
+      * hadoop_datanode_initrc_runtime_t (1 Removed attributes)
+          Attributes:
+          - hadoop_pid_file
+      * hadoop_datanode_initrc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hadoop_datanode_lock_t (1 Removed attributes)
+          Attributes:
+          - hadoop_lock_file
+      * hadoop_datanode_log_t (1 Removed attributes)
+          Attributes:
+          - hadoop_log_file
+      * hadoop_datanode_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hadoop_datanode_tmp_t (1 Removed attributes)
+          Attributes:
+          - hadoop_tmp_file
+      * hadoop_datanode_var_lib_t (1 Removed attributes)
+          Attributes:
+          - hadoop_var_lib_file
+      * hadoop_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * hadoop_hsperfdata_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * hadoop_jobtracker_initrc_exec_t (1 Removed attributes)
+          Attributes:
+          - hadoop_init_script_file
+      * hadoop_jobtracker_initrc_runtime_t (1 Removed attributes)
+          Attributes:
+          - hadoop_pid_file
+      * hadoop_jobtracker_initrc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hadoop_jobtracker_lock_t (1 Removed attributes)
+          Attributes:
+          - hadoop_lock_file
+      * hadoop_jobtracker_log_t (1 Removed attributes)
+          Attributes:
+          - hadoop_log_file
+      * hadoop_jobtracker_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hadoop_jobtracker_tmp_t (1 Removed attributes)
+          Attributes:
+          - hadoop_tmp_file
+      * hadoop_jobtracker_var_lib_t (1 Removed attributes)
+          Attributes:
+          - hadoop_var_lib_file
+      * hadoop_log_t (1 Removed attributes)
+          Attributes:
+          - hadoop_log_file
+      * hadoop_namenode_initrc_exec_t (1 Removed attributes)
+          Attributes:
+          - hadoop_init_script_file
+      * hadoop_namenode_initrc_runtime_t (1 Removed attributes)
+          Attributes:
+          - hadoop_pid_file
+      * hadoop_namenode_initrc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hadoop_namenode_lock_t (1 Removed attributes)
+          Attributes:
+          - hadoop_lock_file
+      * hadoop_namenode_log_t (1 Removed attributes)
+          Attributes:
+          - hadoop_log_file
+      * hadoop_namenode_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hadoop_namenode_tmp_t (1 Removed attributes)
+          Attributes:
+          - hadoop_tmp_file
+      * hadoop_namenode_var_lib_t (1 Removed attributes)
+          Attributes:
+          - hadoop_var_lib_file
+      * hadoop_runtime_t (1 Removed attributes)
+          Attributes:
+          - hadoop_pid_file
+      * hadoop_secondarynamenode_initrc_exec_t (1 Removed attributes)
+          Attributes:
+          - hadoop_init_script_file
+      * hadoop_secondarynamenode_initrc_runtime_t (1 Removed attributes)
+          Attributes:
+          - hadoop_pid_file
+      * hadoop_secondarynamenode_initrc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hadoop_secondarynamenode_lock_t (1 Removed attributes)
+          Attributes:
+          - hadoop_lock_file
+      * hadoop_secondarynamenode_log_t (1 Removed attributes)
+          Attributes:
+          - hadoop_log_file
+      * hadoop_secondarynamenode_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hadoop_secondarynamenode_tmp_t (1 Removed attributes)
+          Attributes:
+          - hadoop_tmp_file
+      * hadoop_secondarynamenode_var_lib_t (1 Removed attributes)
+          Attributes:
+          - hadoop_var_lib_file
+      * hadoop_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * hadoop_tasktracker_initrc_exec_t (1 Removed attributes)
+          Attributes:
+          - hadoop_init_script_file
+      * hadoop_tasktracker_initrc_runtime_t (1 Removed attributes)
+          Attributes:
+          - hadoop_pid_file
+      * hadoop_tasktracker_initrc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hadoop_tasktracker_lock_t (1 Removed attributes)
+          Attributes:
+          - hadoop_lock_file
+      * hadoop_tasktracker_log_t (1 Removed attributes)
+          Attributes:
+          - hadoop_log_file
+      * hadoop_tasktracker_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hadoop_tasktracker_tmp_t (1 Removed attributes)
+          Attributes:
+          - hadoop_tmp_file
+      * hadoop_tasktracker_var_lib_t (1 Removed attributes)
+          Attributes:
+          - hadoop_var_lib_file
+      * hadoop_tmp_t (2 Removed attributes)
+          Attributes:
+          - hadoop_tmp_file
+          - ubac_constrained_type
+      * hadoop_var_lib_t (1 Removed attributes)
+          Attributes:
+          - hadoop_var_lib_file
+      * haproxy_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hddtemp_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * home_root_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * hostapd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hostname_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hplip_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_apcupsd_cgi_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_awstats_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_bugzilla_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_collectd_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_cvs_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_git_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_gpg_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_helper_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_lightsquid_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_man2html_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_mediawiki_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_mojomojo_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_munin_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_nagios_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_nutups_cgi_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_passwd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_prewikka_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_rotatelogs_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_smokeping_cgi_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_squid_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_suexec_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_sys_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * httpd_unconfined_script_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * httpd_user_content_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * httpd_user_htaccess_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * httpd_user_ra_content_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * httpd_user_rw_content_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * httpd_user_script_exec_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * httpd_user_script_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * httpd_webalizer_script_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hugetlbfs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * hwclock_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hwloc_dhwd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hypervkvpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * hypervvssd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * i18n_input_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * iceauth_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * iceauth_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * icecast_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ifconfig_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ifplugd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * iiosensorproxy_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * incusc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * incusc_user_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * incusd_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilereadtoclr
+          - mlsfilewritetoclr
+      * inetd_child_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * inetd_t (1 Added attributes,5 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfdshare
+          - mlsnetoutbound
+          - mlsnetreadtoclr
+          - mlsnetwritetoclr
+          - mlsprocsetsl
+      * init_runtime_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * init_t (10 Removed attributes)
+          Attributes:
+          - initrc_transition_domain
+          - mcssetcats
+          - mlsfduse
+          - mlsfileread
+          - mlsfilewrite
+          - mlsnetreadtoclr
+          - mlsnetwrite
+          - mlsprocsetsl
+          - mlsprocwrite
+          - set_curr_context
+      * initctl_t (1 Removed attributes)
+          Attributes:
+          - mlstrustedobject
+      * initrc_t (9 Removed attributes)
+          Attributes:
+          - mcssetcats
+          - mlsfdshare
+          - mlsfileread
+          - mlsfilewrite
+          - mlsnetwritetoclr
+          - mlsprocread
+          - mlsprocwrite
+          - privrangetrans
+          - set_curr_context
+      * innd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * iodined_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ipmitool_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * ipsec_mgmt_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+      * ipsec_supervisor_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ipsec_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * iptables_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+      * irc_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * irc_log_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * irc_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * irc_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * ircd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * irqbalance_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * iscsid_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * isnsd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * iso9660_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * jabberd_router_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * jabberd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * java_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * java_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * java_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * java_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * java_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * java_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * kadmind_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * kanidm_unixd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * kanidm_unixd_tasks_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * kanidmd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * kdump_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * kdumpctl_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * kernel_t (8 Removed attributes)
+          Attributes:
+          - mcssetcats
+          - mlsfileread
+          - mlsfilewrite
+          - mlsprocread
+          - mlsprocsetsl
+          - mlsprocwrite
+          - privrangetrans
+          - set_curr_context
+      * kerneloops_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * keystone_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * kismet_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * kismet_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * klogd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+      * kmod_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilewrite
+      * kmsg_device_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * knotc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * knotd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * kpropd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * krb5_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * krb5_keytab_t (1 Removed attributes)
+          Attributes:
+          - security_file_type
+      * krb5kdc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ksmtuned_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilereadtoclr
+      * kubeadm_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * kubectl_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * kubelet_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * kubernetes_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * l2tpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ldconfig_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * libmtp_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * libmtp_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * lightsquid_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * lircd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * livecd_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * lldpad_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * load_policy_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+      * loadkeys_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * local_login_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfdshare
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+          - mlsprocsetsl
+      * locate_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * logadm_dbusd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * logadm_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - logadm_application_exec_domain
+          - ubac_constrained_type
+      * logrotate_mail_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * logrotate_t (1 Added attributes,5 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+          - mlsprocwritetoclr
+      * logwatch_mail_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * logwatch_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilereadtoclr
+      * low_mem_mon_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * lpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * lpr_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * lpr_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * lsassd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * lsmd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * lvm_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewritetoclr
+      * lwiod_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * lwregd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * lwsmd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mail_home_rw_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mail_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mail_munin_plugin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mail_munin_plugin_tmp_t (1 Removed attributes)
+          Attributes:
+          - munin_plugin_tmp_content
+      * mail_spool_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * mailman_cgi_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mailman_mail_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mailman_queue_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mandb_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * matrixbot_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * matrixd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mcelog_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+      * mdadm_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewrite
+      * memcached_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * memlockd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mencoder_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * mesa_shader_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * minidlna_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * minissdpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mnt_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * modemmanager_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * modules_object_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * mon_local_test_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mon_net_test_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mon_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mongod_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * monit_cli_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * monit_conf_t (1 Removed attributes)
+          Attributes:
+          - security_file_type
+      * monit_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mono_t (3 Removed attributes)
+          Attributes:
+          - mono_domain
+          - set_curr_context
+          - ubac_constrained_type
+      * monopd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mount_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewrite
+      * mozilla_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mozilla_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mozilla_plugin_config_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * mozilla_plugin_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mozilla_plugin_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * mozilla_plugin_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mozilla_plugin_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mozilla_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * mozilla_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mozilla_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mozilla_xdg_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mozilla_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mpd_user_data_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mplayer_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mplayer_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mplayer_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * mplayer_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mplayer_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mqueue_spool_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * mrtg_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mtrr_device_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * munin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mysqld_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * mysqld_safe_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mysqld_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * mysqlmanagerd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nagios_admin_plugin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nagios_checkdisk_plugin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nagios_eventhandler_plugin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nagios_mail_plugin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nagios_services_plugin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nagios_system_plugin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nagios_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nagios_unconfined_plugin_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * named_conf_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * named_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ncftool_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+      * ndc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * needrestart_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nessusd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * netlabel_mgmt_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * netlabel_peer_t (1 Removed attributes)
+          Attributes:
+          - mcs_constrained_type
+      * netlogond_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * netutils_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * newrole_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfdshare
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+          - mlsprocsetsl
+      * news_spool_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * nfs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * nfsd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nmbd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * node_exporter_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nrpe_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nscd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nsd_crond_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nsd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nslcd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ntop_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ntp_drift_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * ntpd_pid_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * ntpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * null_device_t (1 Removed attributes)
+          Attributes:
+          - mlstrustedobject
+      * numad_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nut_upsd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nut_upsdrvctl_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nut_upsmon_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nx_server_ssh_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * nx_server_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * obex_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * obfs4proxy_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * oddjob_mkhomedir_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * oddjob_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mcssetcats
+      * ofono_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * oidentd_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * oidentd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ooffice_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * ooffice_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * openarc_milter_private_key_t (1 Removed attributes)
+          Attributes:
+          - security_file_type
+      * openarc_milter_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * openca_ca_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * openct_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * openhpid_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * opensm_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * opensnitchd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * openvpn_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * openvswitch_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pacemaker_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pads_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pam_console_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewrite
+      * pam_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * passenger_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * passwd_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfiledowngrade
+          - mlsfilewrite
+      * pcs_snmp_agent_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pcscd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pd_mapper_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pegasus_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * perdition_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ping_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pingd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pipewire_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pipewire_runtime_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pipewire_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * pipewire_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pkcs_slotd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * plymouth_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * plymouthd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * podman_conmon_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * podman_t (1 Added attributes,3 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilereadtoclr
+          - mlsfilewritetoclr
+          - mlstrustedobject
+      * podman_user_conmon_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * podman_user_t (1 Added attributes,4 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilereadtoclr
+          - mlsfilewritetoclr
+          - mlstrustedobject
+          - ubac_constrained_type
+      * policy_config_t (1 Removed attributes)
+          Attributes:
+          - security_file_type
+      * policykit_auth_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * policykit_grant_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * policykit_resolve_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * policykit_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * portage_ebuild_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * portage_fetch_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * portage_sandbox_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * portage_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * portmap_helper_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * portmap_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * portreserve_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * portslave_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_bounce_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_cleanup_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_local_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_map_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_master_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_pickup_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_pipe_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_policyd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_postdrop_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_postqueue_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_qmgr_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_showq_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_smtp_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mailserver_sender
+      * postfix_smtpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfix_virtual_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postfwd_milter_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postgresql_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * postgrey_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * power_profilesd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ppp_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pppd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+      * pptp_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * prelink_cron_system_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * prelink_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * prelude_audisp_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * prelude_correlator_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * prelude_lml_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * prelude_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * print_spool_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * printer_device_t (1 Removed attributes)
+          Attributes:
+          - mlsfilewriteinrange
+      * privoxy_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * procmail_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * procmail_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * psad_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pstore_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * ptmx_t (1 Removed attributes)
+          Attributes:
+          - mlstrustedobject
+      * publicfile_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pulseaudio_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pulseaudio_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pulseaudio_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * pulseaudio_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pulseaudio_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pulseaudio_xdg_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pulseaudio_xdg_config_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pulseaudio_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * puppet_t (2 Removed attributes)
+          Attributes:
+          - initrc_transition_domain
+          - set_curr_context
+      * puppetca_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * puppetmaster_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pwauth_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pxe_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * pyzor_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pyzor_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * pyzor_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pyzor_var_lib_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * pyzord_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * qemu_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * qemu_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mcs_constrained_type
+          - mlsrangetrans
+      * qemu_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * qmail_clean_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * qmail_inject_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * qmail_local_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * qmail_lspawn_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * qmail_queue_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * qmail_remote_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mailserver_sender
+      * qmail_rspawn_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * qmail_send_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * qmail_smtpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * qmail_splogger_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * qmail_start_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * qmail_tcp_env_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * qpidd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * quantum_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * quota_nld_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * quota_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+      * rabbitmq_beam_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * rabbitmq_epmd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * racoon_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * radiusd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * radvd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ramfs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * rasdaemon_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * rauc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * razor_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * razor_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * razor_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * rblsmtpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * rdisc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * realmd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+      * redis_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * regex_milter_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * remote_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * remote_login_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfdshare
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+          - mlsprocsetsl
+      * remote_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * removable_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * resmgrd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * restorecond_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * rhsmcertd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * rkhunter_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * rlogind_devpts_t (1 Removed attributes)
+          Attributes:
+          - server_ptynode
+      * rlogind_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * rlogind_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfdshare
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+          - mlsprocsetsl
+      * rngd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * root_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * root_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * root_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * rootlesskit_t (1 Added attributes,3 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilereadtoclr
+          - mlsfilewritetoclr
+          - mlstrustedobject
+      * rpc_pipefs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * rpcbind_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * rpcd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * rpm_script_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewrite
+      * rpm_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - can_write_binary_policy
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfilerelabel
+          - mlsfileupgrade
+          - mlsfilewrite
+      * rshd_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfdshare
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+          - mlsprocsetsl
+      * rssh_chroot_helper_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * rssh_devpts_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * rssh_ro_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * rssh_rw_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * rssh_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * rsync_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * rtkit_daemon_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * run_init_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - privrangetrans
+      * rwho_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * samba_net_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * samba_unconfined_script_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * samhain_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilewrite
+      * samhaind_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilewrite
+      * sanlock_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * saslauthd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sblim_gatherd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sblim_reposd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * screen_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * screen_runtime_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * screen_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * sdsprpcd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * seatd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfdshare
+      * secadm_dbusd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * secadm_docportal_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * secadm_screen_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * secadm_su_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilewrite
+          - ubac_constrained_type
+      * secadm_sudo_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * secadm_systemd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * secadm_systemd_tmpfiles_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * secadm_t (1 Added attributes,7 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - can_write_binary_policy
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+          - mlsprocread
+          - ubac_constrained_type
+      * security_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + init_typeattr_1
+          - mlstrustedobject
+      * selinux_dbus_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * selinux_munin_plugin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * selinux_munin_plugin_tmp_t (1 Removed attributes)
+          Attributes:
+          - munin_plugin_tmp_content
+      * semanage_t (1 Added attributes,3 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - can_write_binary_policy
+          - mlsfileread
+          - mlsfilewrite
+      * sendmail_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mailserver_sender
+      * sensord_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sepgsql_fixed_table_t (1 Added attributes)
+          Attributes:
+          + postgresql_typeattr_1
+      * sepgsql_ranged_proc_t (1 Added attributes,3 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mcssetcats
+          - mlsprocsetsl
+          - set_curr_context
+      * sepgsql_ro_table_t (1 Added attributes)
+          Attributes:
+          + postgresql_typeattr_1
+      * sepgsql_secret_table_t (1 Added attributes)
+          Attributes:
+          + postgresql_typeattr_1
+      * sepgsql_table_t (1 Added attributes)
+          Attributes:
+          + postgresql_typeattr_1
+      * sepgsql_temp_object_t (1 Added attributes)
+          Attributes:
+          + postgresql_typeattr_1
+      * sepgsql_trusted_proc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * services_munin_plugin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * services_munin_plugin_tmp_t (1 Removed attributes)
+          Attributes:
+          - munin_plugin_tmp_content
+      * session_dbusd_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * session_dbusd_runtime_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * session_dbusd_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * setfiles_t (1 Added attributes,4 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+      * setkey_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * setrans_runtime_t (1 Removed attributes)
+          Attributes:
+          - mlstrustedobject
+      * setrans_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewrite
+          - mlsnetread
+          - mlsnetrecvall
+          - mlsnetwrite
+          - mlsprocread
+      * setroubleshoot_fixit_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * setroubleshootd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsdbusrecv
+      * seunshare_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sftpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * shadow_history_t (2 Removed attributes)
+          Attributes:
+          - auth_file_type
+          - security_file_type
+      * shadow_t (2 Removed attributes)
+          Attributes:
+          - auth_file_type
+          - security_file_type
+      * shibboleth_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * shorewall_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * shutdown_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilewritetoclr
+      * siggen_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sigrok_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * slapd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * slpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * slrnpull_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * smartmon_update_drivedb_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * smbcontrol_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * smbd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * smbmount_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * smokeping_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * smsd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * snmpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * snort_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sosreport_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * soundd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * spamass_milter_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * spamassassin_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * spamassassin_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * spamassassin_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * spamc_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * spamc_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * spamd_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * spamd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * spamd_update_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * spc_t (2 Removed attributes)
+          Attributes:
+          - mmap_low_domain_type
+          - set_curr_context
+      * spc_user_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * spufs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * squid_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * src_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * srvsvcd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ssh_agent_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * ssh_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * ssh_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * ssh_keygen_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ssh_keysign_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * ssh_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * ssh_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * ssh_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * sshd_devpts_t (1 Removed attributes)
+          Attributes:
+          - server_ptynode
+      * sshd_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfdshare
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+          - mlsprocsetsl
+      * sssd_t (1 Added attributes,4 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilereadtoclr
+          - mlsnetreadtoclr
+          - mlsnetwritetoclr
+          - mlstrustedobject
+      * sssd_var_lib_t (1 Removed attributes)
+          Attributes:
+          - mlstrustedobject
+      * staff_bubblewrap_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * staff_consolehelper_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * staff_dbusd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * staff_docportal_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * staff_feedbackd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * staff_git_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * staff_gkeyringd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * staff_screen_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * staff_ssh_agent_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * staff_su_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilewrite
+          - ubac_constrained_type
+      * staff_sudo_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * staff_systemd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * staff_systemd_tmpfiles_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * staff_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * staff_userhelper_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * staff_wm_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfduse
+          - mlsfileread
+          - mlsfilewrite
+          - mlsxwinread
+          - mlsxwinwrite
+          - ubac_constrained_type
+      * stapserver_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * stubby_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * stunnel_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sulogin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * svc_multilog_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * svc_run_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * svc_start_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * svirt_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * svirt_prot_exec_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mcs_constrained_type
+          - mlsrangetrans
+      * svirt_runtime_t (1 Removed attributes)
+          Attributes:
+          - mlstrustedobject
+      * svirt_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mcs_constrained_type
+          - mlsrangetrans
+      * svnserve_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * swat_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * switcheroo_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sxid_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sympa_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * syncthing_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * syncthing_xdg_config_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * sysadm_bubblewrap_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sysadm_consolehelper_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * sysadm_dbusd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * sysadm_docportal_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sysadm_feedbackd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sysadm_gkeyringd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * sysadm_passwd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sysadm_screen_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * sysadm_ssh_agent_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * sysadm_su_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilewrite
+          - ubac_constrained_type
+      * sysadm_sudo_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * sysadm_systemd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * sysadm_systemd_tmpfiles_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sysadm_t (1 Added attributes,9 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - can_write_binary_policy
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsprocread
+          - ubac_constrained_type
+          - ubacfd
+          - ubacfile
+          - ubacproc
+      * sysadm_userhelper_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * sysadm_wm_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfduse
+          - mlsfileread
+          - mlsfilewrite
+          - mlsxwinread
+          - mlsxwinwrite
+          - ubac_constrained_type
+      * sysctl_fs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * sysctl_irq_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * sysctl_kernel_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * sysctl_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * sysfs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * syslogd_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilewrite
+          - mlstrustedsocket
+      * sysstat_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * system_cronjob_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilereadtoclr
+      * system_dbusd_runtime_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * system_dbusd_t (1 Added attributes,7 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+          - mlsdbusrecv
+          - mlsfduse
+          - mlsfileread
+          - mlsnetreadtoclr
+          - mlsnetwrite
+          - mlsrangetrans
+      * system_mail_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * system_map_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * system_munin_plugin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * system_munin_plugin_tmp_t (1 Removed attributes)
+          Attributes:
+          - munin_plugin_tmp_content
+      * system_razor_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_activate_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_analyze_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_backlight_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_binfmt_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_cgroups_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfduse
+      * systemd_cgtop_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_conf_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * systemd_coredump_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_data_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * systemd_generator_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_homed_record_t (2 Removed attributes)
+          Attributes:
+          - auth_file_type
+          - security_file_type
+      * systemd_homed_runtime_work_dir_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * systemd_homed_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_homework_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_hostnamed_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_hw_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_journal_init_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_locale_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_logind_inhibit_runtime_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * systemd_logind_runtime_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * systemd_logind_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_logind_var_lib_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * systemd_machine_id_setup_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_machined_devpts_t (1 Removed attributes)
+          Attributes:
+          - server_ptynode
+      * systemd_machined_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_modules_load_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_networkd_runtime_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * systemd_networkd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_notify_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_nspawn_devpts_t (1 Removed attributes)
+          Attributes:
+          - server_ptynode
+      * systemd_nspawn_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_nsresourced_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_passwd_agent_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_pcrphase_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_pstore_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_resolved_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_rfkill_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_sessions_runtime_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * systemd_sessions_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_socket_proxyd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_stdio_bridge_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_sysctl_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_sysusers_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_tmpfiles_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_update_done_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_user_runtime_dir_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * systemd_user_runtime_notify_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * systemd_user_runtime_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * systemd_user_runtime_unit_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * systemd_user_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * systemd_user_transient_unit_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * systemd_userdbd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * sysv_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * tcpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tcsd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tee_supplicant_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tee_supplicant_var_lib_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * telepathy_gabble_exec_t (1 Removed attributes)
+          Attributes:
+          - telepathy_executable
+      * telepathy_gabble_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * telepathy_gabble_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_gabble_xdg_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_idle_exec_t (1 Removed attributes)
+          Attributes:
+          - telepathy_executable
+      * telepathy_idle_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * telepathy_idle_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_logger_exec_t (1 Removed attributes)
+          Attributes:
+          - telepathy_executable
+      * telepathy_logger_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * telepathy_logger_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_logger_xdg_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_logger_xdg_data_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_mission_control_exec_t (1 Removed attributes)
+          Attributes:
+          - telepathy_executable
+      * telepathy_mission_control_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_mission_control_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * telepathy_mission_control_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_mission_control_xdg_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_mission_control_xdg_data_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_msn_exec_t (1 Removed attributes)
+          Attributes:
+          - telepathy_executable
+      * telepathy_msn_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * telepathy_msn_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_salut_exec_t (1 Removed attributes)
+          Attributes:
+          - telepathy_executable
+      * telepathy_salut_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * telepathy_salut_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_sofiasip_exec_t (1 Removed attributes)
+          Attributes:
+          - telepathy_executable
+      * telepathy_sofiasip_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * telepathy_sofiasip_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_stream_engine_exec_t (1 Removed attributes)
+          Attributes:
+          - telepathy_executable
+      * telepathy_stream_engine_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * telepathy_stream_engine_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_sunshine_exec_t (1 Removed attributes)
+          Attributes:
+          - telepathy_executable
+      * telepathy_sunshine_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_sunshine_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * telepathy_sunshine_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_xdg_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telepathy_xdg_data_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * telnetd_devpts_t (1 Removed attributes)
+          Attributes:
+          - server_ptynode
+      * telnetd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tftpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tgtd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * thunderbird_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * thunderbird_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * thunderbird_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * thunderbird_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * thunderbird_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * thunderbird_xdg_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * thunderbird_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * thunderboltd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * timidity_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tls_privkey_t (1 Removed attributes)
+          Attributes:
+          - tls_privkey_type
+      * tmp_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * tmpfs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * tmpreaper_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewrite
+      * tor_pt_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tor_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tpm2_abrmd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tpm2_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tracefs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * traceroute_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * transproxy_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tripwire_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tty_device_t (1 Removed attributes)
+          Attributes:
+          - serial_device
+      * tuned_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tvtime_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * tvtime_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * tvtime_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * tvtime_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * tvtime_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * tvtime_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * twadmin_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * twprint_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * txtstat_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * tzdata_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ucspitcp_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * udev_t (1 Added attributes,5 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+          - mlsprocwrite
+      * udevadm_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ulogd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * uml_devpts_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * uml_ro_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * uml_rw_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * uml_switch_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * uml_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * uml_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * uml_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * unconfined_cronjob_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * unconfined_execmem_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * unconfined_java_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * unconfined_mount_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * unconfined_munin_plugin_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * unconfined_munin_plugin_tmp_t (1 Removed attributes)
+          Attributes:
+          - munin_plugin_tmp_content
+      * unconfined_qemu_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * unconfined_sendmail_t (1 Removed attributes)
+          Attributes:
+          - set_curr_context
+      * unconfined_t (2 Removed attributes)
+          Attributes:
+          - set_curr_context
+          - ubac_constrained_type
+      * unpriv_sepgsql_table_t (1 Added attributes)
+          Attributes:
+          + postgresql_typeattr_1
+      * updfstab_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * updpwd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * uptimed_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * urm_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * usbfs_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + init_typeattr_1
+          - pseudofs
+      * usbguard_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * usbmodules_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * usbmuxd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * usbtty_device_t (1 Removed attributes)
+          Attributes:
+          - serial_device
+      * user_bin_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * user_bubblewrap_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * user_cert_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * user_consolehelper_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * user_cron_spool_log_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * user_cron_spool_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * user_dbusd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * user_devpts_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * user_docportal_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * user_feedbackd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * user_fonts_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * user_fonts_config_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * user_fonts_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * user_git_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * user_gkeyringd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * user_home_dir_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + init_typeattr_1
+          - ubac_constrained_type
+      * user_home_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + init_typeattr_1
+          - ubac_constrained_type
+      * user_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * user_mail_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * user_mail_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * user_runtime_root_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * user_runtime_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + init_typeattr_1
+          - ubac_constrained_type
+      * user_screen_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * user_sepgsql_table_t (1 Added attributes)
+          Attributes:
+          + postgresql_typeattr_1
+      * user_ssh_agent_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * user_su_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilewrite
+          - ubac_constrained_type
+      * user_sudo_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * user_systemd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * user_systemd_tmpfiles_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * user_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * user_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * user_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * user_tty_device_t (2 Removed attributes)
+          Attributes:
+          - serial_device
+          - ubac_constrained_type
+      * user_userhelper_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * user_wm_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfduse
+          - mlsfileread
+          - mlsfilewrite
+          - mlsxwinread
+          - mlsxwinwrite
+          - ubac_constrained_type
+      * user_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * useradd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileupgrade
+      * usernetctl_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * usr_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * utempter_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * uucpd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * uuidd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * uux_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * var_lib_nfs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * var_lib_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * var_lock_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * var_log_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * var_run_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * var_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * varnishd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * varnishlog_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * vbetool_t (1 Added attributes,3 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfileread
+          - mlsfilewrite
+          - mmap_low_domain_type
+      * vdagent_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * vhostmd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * virsh_ssh_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * virsh_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * virt_bridgehelper_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * virt_content_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * virt_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * virt_image_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * virt_leaseshelper_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * virt_log_t (1 Removed attributes)
+          Attributes:
+          - mlstrustedobject
+      * virt_qmf_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * virt_var_lib_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * virtd_lxc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * virtd_t (1 Added attributes,11 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+          - mcssetcats
+          - mlsfdshare
+          - mlsfilereadtoclr
+          - mlsfilewritetoclr
+          - mlsnetreadtoclr
+          - mlsnetwriteranged
+          - mlsnetwritetoclr
+          - mlsprocreadtoclr
+          - mlsprocwritetoclr
+          - privrangetrans
+      * virtio_device_t (1 Removed attributes)
+          Attributes:
+          - serial_device
+      * virtiofs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * virtlockd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * virtlogd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * vlock_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfilewrite
+      * vmblock_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * vmware_conf_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * vmware_file_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * vmware_host_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * vmware_host_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * vmware_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * vmware_log_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * vmware_pid_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * vmware_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * vmware_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * vmware_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * vmware_tools_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * vmware_tools_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * vmware_vgauth_service_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * vmware_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * vnstat_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * vnstatd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * vpnc_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * vxfs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * watchdog_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * wayland_runtime_sandboxed_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wayland_runtime_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wdmd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - initrc_transition_domain
+      * webadm_dbusd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * webadm_t (1 Added attributes,2 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+          - webadm_application_exec_domain
+      * webalizer_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * winbind_helper_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * winbind_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * wine_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wine_t (3 Removed attributes)
+          Attributes:
+          - mmap_low_domain_type
+          - set_curr_context
+          - ubac_constrained_type
+      * wine_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wireguard_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * wireplumber_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wireplumber_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * wireplumber_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wireshark_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wireshark_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wireshark_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * wireshark_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wireshark_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wireshark_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wm_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wm_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * wpa_cli_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * xauth_home_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xauth_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * xauth_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xdg_cache_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xdg_config_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xdg_data_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xdg_documents_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xdg_downloads_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xdg_music_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xdg_pictures_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xdg_videos_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xdm_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xdm_runtime_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xdm_t (7 Removed attributes)
+          Attributes:
+          - mlsfdshare
+          - mlsfiledowngrade
+          - mlsfileread
+          - mlsfileupgrade
+          - mlsfilewrite
+          - mlsprocsetsl
+          - set_curr_context
+      * xdm_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xen_runtime_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * xen_state_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * xenconsoled_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * xenfs_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * xenstored_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * xenstored_var_lib_t (1 Added attributes)
+          Attributes:
+          + init_typeattr_1
+      * xfs_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * xguest_dbusd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * xguest_docportal_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * xguest_gkeyringd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * xguest_systemd_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * xguest_systemd_tmpfiles_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * xguest_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * xguest_wm_t (1 Added attributes,6 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - mlsfduse
+          - mlsfileread
+          - mlsfilewrite
+          - mlsxwinread
+          - mlsxwinwrite
+          - ubac_constrained_type
+      * xm_ssh_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * xm_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * xscreensaver_config_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xscreensaver_helper_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * xscreensaver_input_xevent_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xscreensaver_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * xscreensaver_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xscreensaver_xproperty_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xserver_t (3 Removed attributes)
+          Attributes:
+          - mlsxwinreadtoclr
+          - set_curr_context
+          - ubac_constrained_type
+      * xserver_tmp_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xserver_tmpfs_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * xsession_log_t (1 Removed attributes)
+          Attributes:
+          - ubac_constrained_type
+      * ypbind_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * yppasswdd_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ypserv_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * ypxfr_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zabbix_agent_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zabbix_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zarafa_deliver_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zarafa_gateway_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zarafa_ical_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zarafa_indexer_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zarafa_monitor_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zarafa_server_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zarafa_spooler_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zebra_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zed_mail_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zed_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zero_device_t (1 Removed attributes)
+          Attributes:
+          - mlstrustedobject
+      * zfs_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zookeeper_log_t (1 Removed attributes)
+          Attributes:
+          - hadoop_log_file
+      * zookeeper_server_initrc_exec_t (1 Removed attributes)
+          Attributes:
+          - hadoop_init_script_file
+      * zookeeper_server_runtime_t (1 Removed attributes)
+          Attributes:
+          - hadoop_pid_file
+      * zookeeper_server_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+      * zookeeper_server_tmp_t (1 Removed attributes)
+          Attributes:
+          - hadoop_tmp_file
+      * zookeeper_t (1 Added attributes,1 Removed attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+          - ubac_constrained_type
+      * zookeeper_tmp_t (2 Removed attributes)
+          Attributes:
+          - hadoop_tmp_file
+          - ubac_constrained_type
+      * zos_remote_t (1 Added attributes)
+          Attributes:
+          + ifplugd_typeattr_1
+
+Type Attributes (10 Added, 112 Removed, 0 Modified)
+   Added Type Attributes: 10
+      + base_typeattr_14
+      + cloudinit_typeattr_1
+      + ifplugd_typeattr_1
+      + init_typeattr_1
+      + init_typeattr_2
+      + postgresql_typeattr_1
+      + puppet_typeattr_1
+      + secadm_typeattr_1
+      + selinuxutil_typeattr_2
+      + sysadm_typeattr_1
+   Removed Type Attributes: 112
+      - auditadm_file_type
+      - auth_file_type
+      - can_write_binary_policy
+      - dbadm_application_exec_domain
+      - dbadm_file_type
+      - guest_application_exec_domain
+      - guest_file_type
+      - hadoop_init_script_file
+      - hadoop_lock_file
+      - hadoop_log_file
+      - hadoop_pid_file
+      - hadoop_tmp_file
+      - hadoop_var_lib_file
+      - ibendport_type
+      - ibpkey_type
+      - initrc_transition_domain
+      - logadm_application_exec_domain
+      - logadm_file_type
+      - mailserver_sender
+      - mcs_constrained_type
+      - mcskillall
+      - mcsptraceall
+      - mcsreadall
+      - mcssetcats
+      - mcswriteall
+      - mlsdbdowngrade
+      - mlsdbread
+      - mlsdbreadtoclr
+      - mlsdbupgrade
+      - mlsdbusrecv
+      - mlsdbussend
+      - mlsdbwrite
+      - mlsdbwriteinrange
+      - mlsdbwritetoclr
+      - mlsfdshare
+      - mlsfduse
+      - mlsfiledowngrade
+      - mlsfileread
+      - mlsfilereadtoclr
+      - mlsfilerelabel
+      - mlsfilerelabeltoclr
+      - mlsfileupgrade
+      - mlsfilewrite
+      - mlsfilewriteinrange
+      - mlsfilewritetoclr
+      - mlsipcread
+      - mlsipcreadtoclr
+      - mlsipcwrite
+      - mlsipcwritetoclr
+      - mlskeywrite
+      - mlskeywritetoclr
+      - mlsnetdowngrade
+      - mlsnetinbound
+      - mlsnetoutbound
+      - mlsnetread
+      - mlsnetreadtoclr
+      - mlsnetrecvall
+      - mlsnetupgrade
+      - mlsnetwrite
+      - mlsnetwriteranged
+      - mlsnetwritetoclr
+      - mlsprocread
+      - mlsprocreadtoclr
+      - mlsprocsetsl
+      - mlsprocwrite
+      - mlsprocwritetoclr
+      - mlsrangetrans
+      - mlstrustedobject
+      - mlstrustedsocket
+      - mlsxwinread
+      - mlsxwinreadcolormap
+      - mlsxwinreadproperty
+      - mlsxwinreadselection
+      - mlsxwinreadtoclr
+      - mlsxwinwrite
+      - mlsxwinwritecolormap
+      - mlsxwinwriteproperty
+      - mlsxwinwriteselection
+      - mlsxwinwritetoclr
+      - mlsxwinwritexinput
+      - mmap_low_domain_type
+      - mono_domain
+      - munin_plugin_tmp_content
+      - privrangetrans
+      - pseudofs
+      - secadm_file_type
+      - security_file_type
+      - serial_device
+      - server_ptynode
+      - set_curr_context
+      - spoolfile
+      - staff_file_type
+      - sysadm_file_type
+      - telepathy_executable
+      - tls_privkey_type
+      - ubac_constrained_type
+      - ubacdb
+      - ubacdbus
+      - ubacfd
+      - ubacfile
+      - ubacipc
+      - ubackey
+      - ubacproc
+      - ubacsock
+      - ubacxwin
+      - unconfined_file_type
+      - user_file_type
+      - usercanread
+      - wayland_client_sandboxed
+      - webadm_application_exec_domain
+      - webadm_file_type
+      - xguest_file_type
+
+Type_transition Rules (1 Added, 0 Removed, 0 Modified)
+   Added Type_transition Rules: 1
+      + type_transition kubelet_t tmp_t:file kubernetes_tmp_t;
+

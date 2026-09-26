@@ -48,4 +48,13 @@ run DENY  'sudo -n setsebool -P allow_execmod on'
 run DENY  'bash -c "sudo semodule -i foo.pp"'
 run allow 'for f in a b; do echo $f; done'
 run allow 'sudo -n sesearch -A -s aide_t /sys/fs/selinux/policy'
+echo "--- round-3: 2>&1 skip-next bug, heredoc bodies (Opus, store-sync-apply review) ---"
+run DENY  'sudo setsebool 2>&1 -P allow_execmod on'
+run allow 'cat >>file.txt <<'"'"'EOF'"'"'
+this text mentions setsebool -P allow_execmod on but is just data
+EOF'
+run DENY  'cat >>file.txt <<'"'"'EOF'"'"'
+just some text
+EOF
+sudo semodule -i foo.pp'
 exit $fail
