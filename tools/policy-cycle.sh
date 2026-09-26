@@ -14,8 +14,9 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_DIR="$REPO/tools/.state"
 POLICY_NAME="atropa-refpolicy"
 INSTALLED_POLICY="/etc/selinux/${POLICY_NAME}/policy/policy.35"
-INSTALLED_FC="/etc/selinux/${POLICY_NAME}/contexts/files/file_contexts"
-INSTALLED_HOMEDIR="/etc/selinux/${POLICY_NAME}/contexts/files/homedir_template"
+INSTALLED_CONTEXTS_DIR="/etc/selinux/${POLICY_NAME}/contexts/files"
+INSTALLED_FC="$INSTALLED_CONTEXTS_DIR/file_contexts"
+INSTALLED_HOMEDIR="$INSTALLED_CONTEXTS_DIR/homedir_template"
 RUNNING_POLICY="/sys/fs/selinux/policy"
 BUILD_POLICY="$REPO/policy.35"
 BUILD_FC="$REPO/file_contexts"
@@ -94,6 +95,10 @@ cmd_gate() {
 	[ -f "$BUILD_STAMP" ] || die "no build stamp -- run 'build' first"
 	[ -f "$BUILD_POLICY" ] || die "no $BUILD_POLICY -- run 'build' first"
 
+	# A crash partway through must not leave a stale ADDITIVE stamp behind
+	# for 'load' to trust later.
+	rm -f "$GATE_STAMP"
+
 	local gate_out verdict
 	gate_out="$(python3 "$REPO/tools/gate_check.py" "$RUNNING_POLICY" "$BUILD_POLICY")"
 	verdict="$(head -1 <<< "$gate_out")"
@@ -103,6 +108,13 @@ cmd_gate() {
 		while IFS= read -r line; do
 			[[ "$line" == reason:* ]] && reasons+=("${line#reason: }")
 		done <<< "$gate_out"
+		# Defense in depth: if gate_check.py said NON-ADDITIVE but (due to
+		# a parsing gap here, not there) no reason: lines were extracted,
+		# don't silently fall through to ADDITIVE below -- fail closed on
+		# the verdict word itself.
+		if [ "${#reasons[@]}" -eq 0 ]; then
+			reasons+=("gate_check.py verdict: $verdict (no reason: lines parsed -- policy-cycle.sh parsing gap, not gate_check.py's)")
+		fi
 	fi
 
 	# file_contexts and homedir_template: ANY difference is non-additive.
@@ -162,16 +174,44 @@ cmd_gate() {
 
 cmd_install() {
 	[ -f "$BUILD_POLICY" ] || die "no $BUILD_POLICY -- run 'build' first"
+	[ -f "$BUILD_STAMP" ] || die "no build stamp -- run 'build' first"
+	[ -f "$GATE_STAMP" ] || die "no gate stamp -- run 'gate' first (installing an ungated build is exactly the mistake this tool exists to prevent)"
 	cd "$REPO"
+
+	local gate_sha build_fc_sha
+	gate_sha="$(grep '^policy_sha256=' "$GATE_STAMP" | cut -d= -f2)"
+	build_fc_sha="$(grep '^fc_sha256=' "$BUILD_STAMP" | cut -d= -f2)"
+	[ "$gate_sha" = "$(sha256_of "$BUILD_POLICY")" ] || die "gate stamp's policy_sha256 does not match the current $BUILD_POLICY -- run 'gate' again before installing"
 
 	local ts
 	ts="$(date +%Y%m%d-%H%M%S)"
-	for f in "$INSTALLED_POLICY" "$INSTALLED_FC" "$INSTALLED_HOMEDIR"; do
-		if [ -f "$f" ]; then
-			sudo cp "$f" "$BACKUP_DIR/$(basename "$f").$ts"
-			info "backed up $f to $BACKUP_DIR/$(basename "$f").$ts"
+	local policy_backup="" contexts_backup=""
+	if [ -f "$INSTALLED_POLICY" ]; then
+		policy_backup="$BACKUP_DIR/policy.35.$ts"
+		sudo cp "$INSTALLED_POLICY" "$policy_backup"
+		info "backed up $INSTALLED_POLICY to $policy_backup"
+	fi
+	if [ -d "$INSTALLED_CONTEXTS_DIR" ]; then
+		# Back up the WHOLE contexts/files dir, not just file_contexts and
+		# homedir_template -- `make install` also regenerates
+		# file_contexts.homedirs and the compiled .bin forms of both, none
+		# of which a narrower per-file restore would roll back (Opus's
+		# round-3 re-review finding).
+		contexts_backup="$BACKUP_DIR/contexts-files.$ts"
+		sudo cp -a "$INSTALLED_CONTEXTS_DIR" "$contexts_backup"
+		info "backed up $INSTALLED_CONTEXTS_DIR to $contexts_backup"
+	fi
+
+	restore_backups() {
+		if [ -n "$policy_backup" ]; then
+			sudo cp "$policy_backup" "$INSTALLED_POLICY"
+			info "restored $INSTALLED_POLICY from $policy_backup"
 		fi
-	done
+		if [ -n "$contexts_backup" ]; then
+			sudo cp -a "$contexts_backup/." "$INSTALLED_CONTEXTS_DIR/"
+			info "restored $INSTALLED_CONTEXTS_DIR from $contexts_backup"
+		fi
+	}
 
 	# `make install` (not a manual cp) -- this is what actually installs
 	# file_contexts and homedir_template too, runs setfiles -c validation,
@@ -179,11 +219,32 @@ cmd_install() {
 	# left fc/homedir changes uninstalled forever.
 	sudo make MONOLITHIC=y TYPE=standard SYSTEMD=y install
 
-	cmp "$BUILD_POLICY" "$INSTALLED_POLICY" || die "cmp mismatch after install -- installed policy.35 does not match build"
+	cmp "$BUILD_POLICY" "$INSTALLED_POLICY" || { restore_backups; die "cmp mismatch after install -- installed policy.35 does not match build"; }
 	if [ -f "$BUILD_FC" ] && [ -f "$INSTALLED_FC" ]; then
-		cmp "$BUILD_FC" "$INSTALLED_FC" || die "cmp mismatch after install -- installed file_contexts does not match build"
+		cmp "$BUILD_FC" "$INSTALLED_FC" || { restore_backups; die "cmp mismatch after install -- installed file_contexts does not match build"; }
 	fi
-	info "installed OK, cmp verified (policy.35 + file_contexts). NOT loaded -- run 'load' explicitly if appropriate."
+
+	# `make install` reruns the compile if anything in the tree is newer
+	# than the last build artifact (e.g. a `make enableaudit`, which strips
+	# every dontaudit rule, or a late .te edit after 'gate' ran) -- cmp
+	# above would still pass because both copies are that SAME silent
+	# rebuild, not the gated one. Pin the install to the exact bytes 'gate'
+	# actually classified.
+	local installed_sha installed_fc_sha
+	installed_sha="$(sha256_of "$INSTALLED_POLICY")"
+	if [ "$installed_sha" != "$gate_sha" ]; then
+		restore_backups
+		die "installed policy.35 sha256 ($installed_sha) does not match the gated sha256 ($gate_sha) -- 'make install' silently rebuilt from newer sources. Backups restored. Run 'build' and 'gate' again on the current tree, then 'install' again."
+	fi
+	if [ -f "$INSTALLED_FC" ] && [ -n "$build_fc_sha" ]; then
+		installed_fc_sha="$(sha256_of "$INSTALLED_FC")"
+		if [ "$installed_fc_sha" != "$build_fc_sha" ]; then
+			restore_backups
+			die "installed file_contexts sha256 does not match the gated build's fc_sha256 -- 'make install' silently rebuilt from newer sources. Backups restored. Run 'build' and 'gate' again, then 'install' again."
+		fi
+	fi
+
+	info "installed OK, cmp + sha256 verified against the gated build (policy.35 + file_contexts). NOT loaded -- run 'load' explicitly if appropriate."
 }
 
 cmd_load() {
