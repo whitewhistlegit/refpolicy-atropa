@@ -21,3 +21,6 @@
 
 /.vagrant/
 /.vscode/
+
+# policy-cycle.sh state (build/gate/verify stamps, backups) -- ephemeral
+/tools/.state/
