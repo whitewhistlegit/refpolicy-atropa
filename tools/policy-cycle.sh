@@ -253,6 +253,8 @@ semodule/semanage for no reason."
 	after Opus flagged the old version as rm -rf'ing all three live
 	trees before ever confirming the tarballs extract cleanly):
 
+	set -e   # stop on the first failure -- the staging checks below only
+	         # protect you if a failing 'test -f' actually halts the script
 	cd $backup_dir
 	sudo rm -rf $stage_dir
 	sudo mkdir -p $stage_dir/var-lib-selinux $stage_dir/etc-selinux $stage_dir/usr-share-selinux
@@ -541,6 +543,49 @@ store_booleans_local_status() {
 	else
 		echo "UNREADABLE"
 	fi
+}
+
+# Runs `sediff --stats a b`, capturing its exit code and stderr instead of
+# merging them into the diff text via `2>&1` -- the old pattern at every
+# sediff call site treated "sediff itself crashed" (nonzero rc, stderr
+# text) exactly like "sediff ran fine and found a real difference" (rc 0,
+# nonempty stdout), so a transient failure (this box has hit apparent
+# memory pressure running sediff against store-sized policies before) got
+# reported and acted on as if it were a genuine policy divergence
+# (Opus's spec, 2026-09-27).
+#
+# Sets SEDIFF_OUT as a side effect and returns:
+#   0 = sediff ran fine, diff is empty (no difference) -- SEDIFF_OUT=""
+#   1 = sediff ran fine, diff is non-empty -- SEDIFF_OUT has the diff
+#   2 = sediff itself failed to run -- SEDIFF_OUT has an explanation +
+#       its stderr. NOT a policy difference; callers must never treat
+#       this the same as case 1. One automatic retry is attempted first
+#       if the failure looks like a memory error.
+# Callers must guard the call (e.g. `run_sediff_stats a b || rc=$?;
+# rc=${rc:-0}`) since a nonzero return would otherwise trip `set -e`.
+run_sediff_stats() {
+	local a="$1" b="$2" out err rc attempt errfile
+	errfile="$(mktemp "$STATE_DIR/sediff-stderr.XXXXXX")"
+	for attempt in 1 2; do
+		out="$(sediff --stats "$a" "$b" 2>"$errfile")" && rc=0 || rc=$?
+		err="$(cat "$errfile" 2>/dev/null)"
+		if [ "$rc" -eq 0 ]; then
+			rm -f "$errfile"
+			SEDIFF_OUT="$out"
+			[ -z "$SEDIFF_OUT" ] && return 0
+			return 1
+		fi
+		if [ "$attempt" -eq 1 ] && grep -qiE 'memoryerror|cannot allocate memory|out of memory' <<<"$err"; then
+			info "sediff failed with an apparent out-of-memory error (rc=$rc) comparing $a vs $b -- retrying once before giving up: $err"
+			continue
+		fi
+		break
+	done
+	rm -f "$errfile"
+	SEDIFF_OUT="sediff itself FAILED (rc=$rc) comparing $a vs $b -- this is NOT a policy difference, do not treat it as one. stderr:
+$err
+If this looks like a memory error (MemoryError / cannot allocate memory), close other applications and retry, or run sediff by hand outside this script to confirm what's going on before assuming anything about the policy's actual state."
+	return 2
 }
 
 cmd_build() {
@@ -906,8 +951,8 @@ cmd_store_sync_plan() {
 	info "store-sync-apply (implemented, pending Opus's review before whitewhistle runs it for real) does, in order:"
 	echo "  1. lock (flock, R6) + refuse if marker exists, pacman is running, or db.lck is present (R4)"
 	echo "  2. backup ALL THREE trees: $STORE_DIR, $STORE_ETC_DIR, $STORE_USR_DIR"
-	echo "     (tar --xattrs --selinux --acls, timestamped, tar -tzf verified, RESTORE runbook written"
-	echo "     alongside the backup and copied to /root/ for console readability)"
+	echo "     (tar --xattrs --xattrs-include='security.selinux' --acls, timestamped, content-verified,"
+	echo "     RESTORE runbook written alongside the backup and copied to /root/ for console readability)"
 	echo "  3. unprivileged modular build: 'make MONOLITHIC=n clean' first (B2 -- a stale monolithic"
 	echo "     tmp/ silently poisons base.conf), then 'make MONOLITHIC=n all' (base.pp + every tree"
 	echo "     module .pp), sha256 manifest of all of it pinned for step 6 to re-check"
@@ -1214,15 +1259,22 @@ cmd_store_sync_apply() {
 	cp "$INSTALLED_POLICY" "$pre_clear_copy"
 	sudo semanage boolean -D
 
-	local post_clear_diff booleans_local_path b
-	post_clear_diff="$(sediff --stats "$RUNNING_POLICY" "$INSTALLED_POLICY" 2>&1)"
-	[ -z "$post_clear_diff" ] || die "post-'semanage boolean -D' sediff is NOT empty -- running policy does not match installed:
-$post_clear_diff"
-	local pre_post_diff
-	pre_post_diff="$(sediff --stats "$pre_clear_copy" "$INSTALLED_POLICY" 2>&1)"
+	local booleans_local_path b rc
+	run_sediff_stats "$RUNNING_POLICY" "$INSTALLED_POLICY" || rc=$?
+	rc="${rc:-0}"
+	case "$rc" in
+		2) die "post-'semanage boolean -D' sediff check could not complete -- do NOT write the marker: $SEDIFF_OUT" ;;
+		1) die "post-'semanage boolean -D' sediff is NOT empty -- running policy does not match installed:
+$SEDIFF_OUT" ;;
+	esac
+	run_sediff_stats "$pre_clear_copy" "$INSTALLED_POLICY" || rc=$?
+	rc="${rc:-0}"
 	rm -f "$pre_clear_copy"
-	[ -z "$pre_post_diff" ] || die "installed policy.35 has a real semantic difference after 'semanage boolean -D' (sediff --stats below) -- expected none, since all 8 cleared booleans.local entries were supposed to already equal their compiled defaults. Do NOT write the marker; investigate before retrying:
-$pre_post_diff"
+	case "$rc" in
+		2) die "post-'semanage boolean -D' pre/post comparison could not complete -- do NOT write the marker: $SEDIFF_OUT" ;;
+		1) die "installed policy.35 has a real semantic difference after 'semanage boolean -D' (sediff --stats below) -- expected none, since all 8 cleared booleans.local entries were supposed to already equal their compiled defaults. Do NOT write the marker; investigate before retrying:
+$SEDIFF_OUT" ;;
+	esac
 	for b in "${STORE_INTENDED_TRUE_BOOLEANS[@]}"; do
 		seinfo -b "$b" -x "$INSTALLED_POLICY" 2>/dev/null | grep -q "^   bool $b true;$" \
 			|| die "$b's compiled default in the installed policy.35 is not 'true' after clearing booleans.local. Do NOT write the marker."
@@ -1303,13 +1355,14 @@ cmd_store_sync_finalize() {
 
 	echo "=== 1/6: running policy == installed policy (sediff) ==="
 	sec_ok=1
-	local running_vs_installed
-	running_vs_installed="$(sediff --stats "$RUNNING_POLICY" "$INSTALLED_POLICY" 2>&1)"
-	if [ -n "$running_vs_installed" ]; then
-		info "FAIL: running policy differs from installed:
-$running_vs_installed"
-		sec_ok=0
-	fi
+	local rc
+	run_sediff_stats "$RUNNING_POLICY" "$INSTALLED_POLICY" || rc=$?
+	rc="${rc:-0}"
+	case "$rc" in
+		2) info "FAIL: sediff check could not complete: $SEDIFF_OUT"; sec_ok=0 ;;
+		1) info "FAIL: running policy differs from installed:
+$SEDIFF_OUT"; sec_ok=0 ;;
+	esac
 	[ "$sec_ok" -eq 1 ] && info "OK: running == installed"
 	ok=$((ok & sec_ok))
 
@@ -1320,13 +1373,13 @@ $running_vs_installed"
 		info "FAIL: no dry-run scratch copy at $scratch_policy -- was store-sync-dryrun/apply ever run against this checkout? Cannot cross-check without it."
 		sec_ok=0
 	else
-		local scratch_vs_installed
-		scratch_vs_installed="$(sediff --stats "$scratch_policy" "$INSTALLED_POLICY" 2>&1)"
-		if [ -n "$scratch_vs_installed" ]; then
-			info "FAIL: dry-run scratch policy.35 differs semantically from installed:
-$scratch_vs_installed"
-			sec_ok=0
-		fi
+		run_sediff_stats "$scratch_policy" "$INSTALLED_POLICY" || rc=$?
+		rc="${rc:-0}"
+		case "$rc" in
+			2) info "FAIL: sediff check could not complete: $SEDIFF_OUT"; sec_ok=0 ;;
+			1) info "FAIL: dry-run scratch policy.35 differs semantically from installed:
+$SEDIFF_OUT"; sec_ok=0 ;;
+		esac
 	fi
 	[ "$sec_ok" -eq 1 ] && info "OK: scratch policy.35 matches installed semantically"
 	ok=$((ok & sec_ok))
