@@ -1034,24 +1034,39 @@ cmd_store_sync_apply() {
 	# the modular build (confirmed: seinfo -b NAME -x base.pp/module .pp),
 	# so the store's 8 stale booleans.local overrides are now redundant
 	# and, per the git-is-source-of-truth decision, should go.
-	local pre_clear_sha
-	pre_clear_sha="$(sha256_of "$INSTALLED_POLICY")"
+	# S5 (fixed): the original check asserted policy.35's sha256 stayed
+	# byte-identical across 'semanage boolean -D'. That's wrong -- libsepol
+	# can (and did, on the real run) lay out policy.35 differently for an
+	# empty vs. a populated booleans.local even when every boolean's
+	# compiled default is unchanged (Opus: same-size file, 813k bytes
+	# differing, zero semantic change). Compare semantically instead: a
+	# full sediff between the pre-clear and post-clear installed policy
+	# must show nothing at all (booleans.local was redundant -- its 8
+	# entries already equalled the tree's compiled defaults, so clearing
+	# it should change zero effective state), and boolean defaults are
+	# read from the compiled policy itself (`seinfo -b NAME -x`), never
+	# from `getsebool` -- getsebool reports the kernel's current runtime
+	# value, which survives a reload and would still read correctly even
+	# if the compiled default silently reverted.
+	local pre_clear_copy="$STATE_DIR/pre-boolean-clear-policy.35"
+	cp "$INSTALLED_POLICY" "$pre_clear_copy"
 	sudo semanage boolean -D
 
-	# S5: `semanage boolean -D` recompiles and reloads on its own -- verify
-	# it landed cleanly before trusting it enough to write the marker.
 	local post_clear_diff booleans_local_path b
 	post_clear_diff="$(sediff --stats "$RUNNING_POLICY" "$INSTALLED_POLICY" 2>&1)"
 	[ -z "$post_clear_diff" ] || die "post-'semanage boolean -D' sediff is NOT empty -- running policy does not match installed:
 $post_clear_diff"
-	[ "$(sha256_of "$INSTALLED_POLICY")" = "$pre_clear_sha" ] \
-		|| die "installed policy.35 changed after 'semanage boolean -D' -- expected byte-identical, since all 8 cleared booleans already equalled their compiled defaults. Do NOT write the marker; investigate before retrying."
+	local pre_post_diff
+	pre_post_diff="$(sediff --stats "$pre_clear_copy" "$INSTALLED_POLICY" 2>&1)"
+	rm -f "$pre_clear_copy"
+	[ -z "$pre_post_diff" ] || die "installed policy.35 has a real semantic difference after 'semanage boolean -D' (sediff --stats below) -- expected none, since all 8 cleared booleans.local entries were supposed to already equal their compiled defaults. Do NOT write the marker; investigate before retrying:
+$pre_post_diff"
 	for b in "${STORE_INTENDED_TRUE_BOOLEANS[@]}"; do
-		getsebool "$b" 2>/dev/null | grep -q "on$" \
-			|| die "$b is not 'on' after clearing booleans.local -- compiled default didn't take. Do NOT write the marker."
+		seinfo -b "$b" -x "$INSTALLED_POLICY" 2>/dev/null | grep -q "^   bool $b true;$" \
+			|| die "$b's compiled default in the installed policy.35 is not 'true' after clearing booleans.local. Do NOT write the marker."
 	done
-	getsebool allow_execmod 2>/dev/null | grep -q "off$" \
-		|| die "allow_execmod is not 'off' after clearing booleans.local -- expected its compiled default. Do NOT write the marker."
+	seinfo -b allow_execmod -x "$INSTALLED_POLICY" 2>/dev/null | grep -q "^   bool allow_execmod false;$" \
+		|| die "allow_execmod's compiled default in the installed policy.35 is not 'false' after clearing booleans.local. Do NOT write the marker."
 	booleans_local_path="$(sudo find "$STORE_DIR" -maxdepth 3 -iname booleans.local 2>/dev/null | head -1)"
 	if [ -n "$booleans_local_path" ]; then
 		local remaining_booleans
@@ -1072,6 +1087,159 @@ $post_clear_diff"
 	info "System remains Permissive by design -- do NOT setenforce 1 until after a verified reboot (R5). The monolithic build/gate/install/load subcommands are now retired (they die when $STORE_MARKER exists)."
 }
 
+# store-sync-finalize: for the specific situation where a real sync already
+# succeeded (commit_num advanced, everything on disk/live is correct) but
+# the marker was never written because a LATER check in cmd_store_sync_apply
+# died on a false positive (the original S5 bug: 2026-09-26 night, real
+# commit_num 53->55, marker absent). This is deliberately NOT "re-run
+# apply" -- a real re-run would die at its own step 4 (foreign-module
+# assertion), since the 24 legacy modules are already gone; that's the
+# whole point, the sync already happened. Instead this independently
+# re-derives every fact apply's own verification relies on, straight from
+# the CURRENT live state, and writes the marker only if every single one
+# checks out. Read-only apart from the marker write itself -- no semodule,
+# no semanage, no setsebool anywhere in this function (Opus's checklist
+# point 7; a structural property of this code, not something it asserts
+# about itself at runtime).
+cmd_store_sync_finalize() {
+	# --dry-run: run every check and print the verdict, but never call
+	# store_write_marker. Added after an incident (2026-09-27) where running
+	# this command to sanity-check its own check output ended up writing the
+	# real marker, because the function had no way to observe its checks
+	# without also taking the one live action it gates -- there was no
+	# side-effect-free path through it at all. Model: same idea as
+	# store-sync-apply's own dry run (observe, take zero live action), even
+	# though the mechanism differs (apply's dry run executes against a
+	# scratch copy of the store; finalize's dry run just skips its own
+	# final write, since every check it runs is already read-only).
+	local dry_run=0
+	case "${1:-}" in
+		--dry-run) dry_run=1; shift ;;
+	esac
+
+	[ "$(id -u)" -eq 0 ] && die "run this as your normal user (with sudo available), not as root."
+	command -v flock >/dev/null || die "flock not found"
+
+	mkdir -p "$STATE_DIR"
+	exec 9>"$STORE_LOCK_FILE"
+	flock -n 9 || die "another store-sync-apply/finalize (or something holding $STORE_LOCK_FILE) is already running."
+
+	if [ -f "$STORE_MARKER" ]; then
+		info "marker already exists ($STORE_MARKER) -- already finalized, nothing to do (a second run, dry or real, is a safe no-op):"
+		cat "$STORE_MARKER"
+		return 0
+	fi
+
+	if [ "$dry_run" -eq 1 ]; then
+		info "=== store-sync-finalize --dry-run: re-verifying the CURRENT live state (checks only -- marker will NOT be written) ==="
+	else
+		info "=== store-sync-finalize: re-verifying the CURRENT live state, writing the marker only if every check passes ==="
+	fi
+	local ok=1 sec_ok scratch_etc="$STORE_SCRATCH_DIR$STORE_ETC_DIR"
+
+	echo "=== 1/6: running policy == installed policy (sediff) ==="
+	sec_ok=1
+	local running_vs_installed
+	running_vs_installed="$(sediff --stats "$RUNNING_POLICY" "$INSTALLED_POLICY" 2>&1)"
+	if [ -n "$running_vs_installed" ]; then
+		info "FAIL: running policy differs from installed:
+$running_vs_installed"
+		sec_ok=0
+	fi
+	[ "$sec_ok" -eq 1 ] && info "OK: running == installed"
+	ok=$((ok & sec_ok))
+
+	echo "=== 2/6: dry-run scratch reference policy.35 vs installed (sediff, semantic -- NOT cmp/sha, per the S5 lesson: booleans.local's presence/absence alone changes policy.35's bytes with zero semantic effect) ==="
+	sec_ok=1
+	local scratch_policy="$scratch_etc/policy/policy.35"
+	if [ ! -f "$scratch_policy" ]; then
+		info "FAIL: no dry-run scratch copy at $scratch_policy -- was store-sync-dryrun/apply ever run against this checkout? Cannot cross-check without it."
+		sec_ok=0
+	else
+		local scratch_vs_installed
+		scratch_vs_installed="$(sediff --stats "$scratch_policy" "$INSTALLED_POLICY" 2>&1)"
+		if [ -n "$scratch_vs_installed" ]; then
+			info "FAIL: dry-run scratch policy.35 differs semantically from installed:
+$scratch_vs_installed"
+			sec_ok=0
+		fi
+	fi
+	[ "$sec_ok" -eq 1 ] && info "OK: scratch policy.35 matches installed semantically"
+	ok=$((ok & sec_ok))
+
+	echo "=== 3/6: module set == tree modules exactly, both directions (no foreign/legacy left, nothing tree missing) ==="
+	sec_ok=1
+	local foreign installed_sorted tree_sorted missing_tree installed_count tree_count
+	foreign="$(store_foreign_modules)"
+	if [ -n "$foreign" ]; then
+		info "FAIL: foreign/legacy modules still present: $foreign"
+		sec_ok=0
+	fi
+	installed_sorted="$(sudo semodule -l | sort -u)"
+	tree_sorted="$(store_tree_modules | sort -u)"
+	missing_tree="$(comm -23 <(echo "$tree_sorted") <(echo "$installed_sorted"))"
+	if [ -n "$missing_tree" ]; then
+		info "FAIL: tree modules missing from the store: $missing_tree"
+		sec_ok=0
+	fi
+	installed_count="$(echo "$installed_sorted" | wc -l)"
+	tree_count="$(echo "$tree_sorted" | wc -l)"
+	if [ "$installed_count" != "$tree_count" ]; then
+		info "FAIL: installed module count ($installed_count) != tree module count ($tree_count) -- something extra beyond what the checks above caught"
+		sec_ok=0
+	fi
+	[ "$sec_ok" -eq 1 ] && info "OK: module set is exactly the tree's ($installed_count modules)"
+	ok=$((ok & sec_ok))
+
+	echo "=== 4/6: booleans.local is empty or absent, and compiled boolean defaults (seinfo -b -x against installed policy.35 -- never getsebool, which reports the kernel's current runtime value, not the compiled default) ==="
+	sec_ok=1
+	local booleans_local_path remaining_booleans b
+	booleans_local_path="$(sudo find "$STORE_DIR" -maxdepth 3 -iname booleans.local 2>/dev/null | head -1)"
+	if [ -n "$booleans_local_path" ]; then
+		remaining_booleans="$(sudo grep -vc '^#\|^$' "$booleans_local_path" 2>/dev/null || true)"
+		remaining_booleans="${remaining_booleans:-0}"
+		if [ "$remaining_booleans" -ne 0 ]; then
+			info "FAIL: booleans.local ($booleans_local_path) has $remaining_booleans entries, expected 0"
+			sec_ok=0
+		fi
+	fi
+	for b in "${STORE_INTENDED_TRUE_BOOLEANS[@]}"; do
+		seinfo -b "$b" -x "$INSTALLED_POLICY" 2>/dev/null | grep -q "^   bool $b true;$" \
+			|| { info "FAIL: $b's compiled default is not 'true'"; sec_ok=0; }
+	done
+	seinfo -b allow_execmod -x "$INSTALLED_POLICY" 2>/dev/null | grep -q "^   bool allow_execmod false;$" \
+		|| { info "FAIL: allow_execmod's compiled default is not 'false'"; sec_ok=0; }
+	[ "$sec_ok" -eq 1 ] && info "OK: booleans.local empty/absent, all 10 compiled defaults correct"
+	ok=$((ok & sec_ok))
+
+	echo "=== 5/6: file_contexts / file_contexts.homedirs / seusers byte-equal to the dry-run scratch copy (plain cmp is fine here -- unlike policy.35, these aren't affected by booleans.local) ==="
+	sec_ok=1
+	local f
+	for f in contexts/files/file_contexts contexts/files/file_contexts.homedirs seusers; do
+		if [ ! -f "$scratch_etc/$f" ]; then
+			info "FAIL: no dry-run scratch copy of $f to compare against"
+			sec_ok=0
+			continue
+		fi
+		sudo cmp -s "$scratch_etc/$f" "$STORE_ETC_DIR/$f" \
+			|| { info "FAIL: $f differs from the dry-run scratch copy"; sec_ok=0; }
+	done
+	[ "$sec_ok" -eq 1 ] && info "OK: fc/homedirs/seusers byte-identical to the dry-run scratch copy"
+	ok=$((ok & sec_ok))
+
+	echo
+	[ "$ok" -eq 1 ] || die "store-sync-finalize found real problems (FAIL lines above). Marker NOT written. Investigate before retrying -- do not re-run this blindly hoping it clears."
+
+	if [ "$dry_run" -eq 1 ]; then
+		info "=== 6/6 (skipped -- --dry-run): all 5 checks passed. Marker would be written now. Nothing was written. Re-run without --dry-run to actually finalize. ==="
+		return 0
+	fi
+
+	echo "=== 6/6: all checks passed -- writing marker ==="
+	store_write_marker
+	info "Store commit_num: $(store_commit_num). System remains Permissive by design -- do NOT setenforce 1 until after a verified reboot (R5). The monolithic build/gate/install/load subcommands are now retired (they die when $STORE_MARKER exists)."
+}
+
 case "${1:-}" in
 	build) shift; cmd_build "$@" ;;
 	gate) shift; cmd_gate "$@" ;;
@@ -1083,8 +1251,9 @@ case "${1:-}" in
 	store-sync-plan) shift; cmd_store_sync_plan "$@" ;;
 	store-sync-dryrun) shift; cmd_store_sync_dryrun "$@" ;;
 	store-sync-apply) shift; cmd_store_sync_apply "$@" ;;
+	store-sync-finalize) shift; cmd_store_sync_finalize "$@" ;;
 	*)
-		echo "usage: policy-cycle.sh {build|gate|install|load|verify <sesearch-args>|verify-bool <name>|commit|store-sync-plan|store-sync-dryrun|store-sync-apply}"
+		echo "usage: policy-cycle.sh {build|gate|install|load|verify <sesearch-args>|verify-bool <name>|commit|store-sync-plan|store-sync-dryrun|store-sync-apply|store-sync-finalize [--dry-run]}"
 		exit 1
 		;;
 esac
