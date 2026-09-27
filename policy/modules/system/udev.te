@@ -42,7 +42,10 @@ files_tmpfs_file(udev_tmpfs_t)
 #
 
 allow udev_t self:capability { chown dac_override dac_read_search fowner fsetid mknod net_admin net_raw setgid setuid sys_admin sys_nice sys_ptrace sys_rawio sys_resource };
-allow udev_t self:capability2 { block_suspend wake_alarm };
+# Q4 (2026-09-27/28): udev-worker loads nvidia itself now that Q2 dropped
+# the manual modules-load cmdline flag -- real observed denial: self
+# capability2 perfmon (4x on the first enforcing boot).
+allow udev_t self:capability2 { block_suspend perfmon wake_alarm };
 allow udev_t self:process { dyntransition execmem getattr getcap getpgid getrlimit getsched getsession noatsecure ptrace rlimitinh setcap setfscreate setkeycreate setpgid setrlimit setsched setsockcreate share siginh signal_perms transition };
 allow udev_t self:fd use;
 allow udev_t self:fifo_file rw_fifo_file_perms;
@@ -156,6 +159,11 @@ fs_list_inotifyfs(udev_t)
 fs_read_cgroup_files(udev_t)
 fs_rw_anon_inodefs_files(udev_t)
 fs_list_tmpfs(udev_t)
+# Q4 (2026-09-27/28): real observed denial is tmpfs_t:file { read write
+# getattr } comm systemd-udevd -- a memfd-backed tmpfs object not the
+# anon_inode security class. That is not touched by this domain here --
+# fs_rw_anon_inodefs_files above is a different kernel labeling mechanism.
+fs_rw_tmpfs_files(udev_t)
 fs_search_tracefs(udev_t)
 fs_manage_efivarfs_files(udev_t)
 # for systemd-udevd to add /sys/fs/cgroup/system.slice/systemd-udevd.service/udev/cgroup.procs

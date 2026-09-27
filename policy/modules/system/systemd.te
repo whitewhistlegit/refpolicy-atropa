@@ -1151,6 +1151,12 @@ fs_unmount_tmpfs(systemd_logind_t)
 fs_getattr_xattr_fs(systemd_logind_t)
 fs_search_auto_mountpoints(systemd_logind_t)
 fs_watch_memory_pressure(systemd_logind_t)
+# Q4 (2026-09-27/28): logind already reads cgroup_t files (generic
+# init-domain grant elsewhere) -- the observed gap is specifically write
+# for memory.pressure. The fs_watch_memory_pressure call above targets a
+# type the kernel never actually applies here (see the syslogd_t comment
+# in logging.te).
+fs_write_cgroup_files(systemd_logind_t)
 fs_getattr_nsfs_files(systemd_logind_t)
 
 selinux_use_status_page(systemd_logind_t)
@@ -2199,6 +2205,21 @@ optional_policy(`
 	allow systemd_tmpfiles_t auditd_etc_t:dir search;
 ')
 
+# Q4 (2026-09-27/28): tmpfiles.d Z/z lines fix ownership and mode on
+# /var/log/audit/*. auditd_log_t already has dir-level create/relabel here
+# but nothing exists yet for the file class. Deliberately narrow -- no read
+# write create or unlink -- auditd_log_t is excluded from the generic
+# systemd_tmpfiles_manage_all boolean bundle on purpose (not tagged
+# non_security_file_type) and this keeps that boundary: label and ownership
+# fixups only -- never audit log content.
+optional_policy(`
+	gen_require(`
+		type auditd_log_t;
+	')
+
+	allow systemd_tmpfiles_t auditd_log_t:file { getattr relabelfrom relabelto setattr };
+')
+
 kernel_getattr_proc(systemd_tmpfiles_t)
 kernel_read_kernel_sysctls(systemd_tmpfiles_t)
 kernel_read_network_state(systemd_tmpfiles_t)
@@ -2477,6 +2498,11 @@ fs_getattr_nsfs_files(systemd_userdbd_t)
 fs_search_cgroup_dirs(systemd_userdbd_t)
 fs_read_efivarfs_files(systemd_userdbd_t)
 fs_watch_memory_pressure(systemd_userdbd_t)
+# Q4 (2026-09-27/28): the fs_watch_memory_pressure call above targets a
+# type the kernel never actually applies here (see the syslogd_t comment
+# in logging.te) -- grant against the real observed type (cgroup_t)
+# instead.
+fs_rw_cgroup_files(systemd_userdbd_t)
 
 kernel_read_system_state(systemd_userdbd_t)
 
@@ -2524,6 +2550,13 @@ fs_mount_tmpfs(systemd_user_runtime_dir_t)
 fs_getattr_tmpfs(systemd_user_runtime_dir_t)
 fs_list_tmpfs(systemd_user_runtime_dir_t)
 fs_unmount_tmpfs(systemd_user_runtime_dir_t)
+# Q4 (2026-09-27/28): querying and enforcing the RuntimeDirectorySize quota
+# on the per-user tmpfs it just mounted -- real observed denial: quotaget
+# enforcing and quotamod under the earlier permissive baseline. No narrower
+# tmpfs-specific quota interface exists in this tree -- these grant on the
+# broad filesystem_type attribute matching the only interfaces available.
+fs_get_all_fs_quotas(systemd_user_runtime_dir_t)
+fs_set_all_quotas(systemd_user_runtime_dir_t)
 fs_relabelfrom_tmpfs_dirs(systemd_user_runtime_dir_t)
 fs_read_cgroup_files(systemd_user_runtime_dir_t)
 fs_getattr_cgroup(systemd_user_runtime_dir_t)

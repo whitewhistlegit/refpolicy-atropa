@@ -576,6 +576,13 @@ ifdef(`init_systemd',`
 	fs_list_cgroup_dirs(syslogd_t)
 	fs_getattr_nsfs_files(syslogd_t)
 	fs_watch_memory_pressure(syslogd_t)
+	# The fs_watch_memory_pressure call above targets memory_pressure_t --
+	# a type the kernel never actually applies to a live memory.pressure
+	# file on this system. Every one observed is plain cgroup_t -- the
+	# fs_cgroup_filetrans_memory_pressure transition in init.te does not fire
+	# for cgroupfs controller files in practice. Q4 (2026-09-27/28): grant
+	# against the real observed type instead.
+	fs_rw_cgroup_files(syslogd_t)
 	fs_getattr_nsfs_files(syslogd_t)
 
 	init_create_runtime_dirs(syslogd_t)

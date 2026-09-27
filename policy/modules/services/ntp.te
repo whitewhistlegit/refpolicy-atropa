@@ -162,6 +162,12 @@ ifdef(`init_systemd',`
 	init_reload(ntpd_t)
 	init_watch_runtime_dirs(ntpd_t)
 	fs_watch_memory_pressure(ntpd_t)
+	# Q4 (2026-09-27/28): the fs_watch_memory_pressure call above targets a
+	# type the kernel never actually applies here (see the syslogd_t comment
+	# in logging.te) -- grant against the real observed type (cgroup_t)
+	# instead. This is systemd-timesyncd actual live domain (ntpd_t is the
+	# shared NTP-client alias in this tree).
+	fs_rw_cgroup_files(ntpd_t)
 
 	# for /var/lib/systemd/clock
 	init_list_var_lib_dirs(ntpd_t)
