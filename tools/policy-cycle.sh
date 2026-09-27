@@ -110,6 +110,149 @@ store_etc_tree_sha() {
 	sudo find "$STORE_ETC_DIR" -type f -exec sha256sum {} + 2>/dev/null | sort | sha256sum | cut -d' ' -f1
 }
 
+# Writes RESTORE.sh (the actual restore procedure, an executable script)
+# and RESTORE.txt (a short pointer to it) into $2, for the backup taken
+# at timestamp $3. Split out of store_backup_all so it can also be called
+# standalone to regenerate a runbook for an EXISTING backup dir without
+# retaking its tarballs (used to patch 20260927-043301 after this fix
+# landed, since its tarballs are still valid -- only the runbook needed
+# fixing).
+#
+# $1: "pre-sync" or "post-sync" -- see store_backup_all's own comment for
+# what these mean and why the wording/marker-handling differs.
+#
+# Ships the restore procedure as an actual `set -euo pipefail` SCRIPT
+# rather than prose-with-embedded-commands to paste into a shell (Opus,
+# 2026-09-27, round 2): a bare `set -e` pasted into an interactive root
+# shell exits the shell itself on the first failure with no indication of
+# which check failed, and stays set for anything typed afterwards in that
+# same shell. A script contained is safer and can name exactly which file
+# was missing before exiting.
+store_write_restore_runbook() {
+	local context="$1" backup_dir="$2" ts="$3"
+	case "$context" in
+		pre-sync|post-sync) ;;
+		*) die "store_write_restore_runbook: \$1 must be 'pre-sync' or 'post-sync', got '${context:-<empty>}'" ;;
+	esac
+
+	local header_line footer_note marker_block stage_dir base_store base_etc base_usr
+	stage_dir="/tmp/atropa-restore-staging-$ts"
+	base_store="$(basename "$STORE_DIR")"
+	base_etc="$(basename "$STORE_ETC_DIR")"
+	base_usr="$(basename "$STORE_USR_DIR")"
+	if [ "$context" = "pre-sync" ]; then
+		header_line="RESTORE for the $ts store-sync-apply attempt (PRE-sync backup)"
+		footer_note="This restores the PRE-sync state of all three trees, as they were
+immediately before this store-sync-apply attempt began. It does NOT
+restore booleans.local if 'semanage boolean -D' already ran as part of
+that attempt -- re-set those 8 booleans by hand if needed (see the
+sync's own output for the list, or ~/claude-readme/sonnet-5/MEMORY.md)."
+		marker_block="# S6: absolute path, not ~ -- this runs as/via root, where ~ means
+# /root, not \$HOME. Without this, the hook would still treat the
+# restored (stale, pre-sync) store as synced and allow module ops
+# against it.
+sudo rm -f '$STORE_MARKER'"
+	else
+		local backup_commit
+		backup_commit="$(store_commit_num)"
+		header_line="RESTORE for the $ts backup (POST-sync, verified-good state)"
+		footer_note="This restores the VERIFIED-GOOD POST-sync state of all three trees
+(store commit_num $backup_commit at backup time) -- NOT a pre-sync
+state. Do NOT delete $STORE_MARKER after restoring it: the restored
+state genuinely IS synced, and deleting the marker would wrongly
+reopen the retired monolithic gate/install/load path and re-block
+semodule/semanage for no reason."
+		marker_block="# post-sync backup -- the marker is intentionally left untouched here;
+# see RESTORE.txt for why."
+	fi
+
+	local script="$backup_dir/RESTORE.sh" pointer="$backup_dir/RESTORE.txt"
+	cat > "$script" <<-EOF
+	#!/bin/bash
+	# $header_line
+	# Run as: sudo bash RESTORE.sh
+	set -euo pipefail
+
+	check_file() {
+		if [ ! -f "\$1" ]; then
+			echo "MISSING: \$1 -- STOPPING. Nothing live has been touched yet." >&2
+			exit 1
+		fi
+	}
+
+	cd '$backup_dir'
+	rm -rf '$stage_dir'
+	mkdir -p '$stage_dir/var-lib-selinux' '$stage_dir/etc-selinux' '$stage_dir/usr-share-selinux'
+	tar --xattrs --xattrs-include='security.selinux' --acls -xzf store.tar.gz -C '$stage_dir/var-lib-selinux'
+	tar --xattrs --xattrs-include='security.selinux' --acls -xzf etc.tar.gz -C '$stage_dir/etc-selinux'
+	tar --xattrs --xattrs-include='security.selinux' --acls -xzf usr.tar.gz -C '$stage_dir/usr-share-selinux'
+
+	# verify key files landed in staging BEFORE touching anything live
+	check_file '$stage_dir/var-lib-selinux/$base_store/active/commit_num'
+	check_file '$stage_dir/var-lib-selinux/$base_store/active/policy.kern'
+	check_file '$stage_dir/etc-selinux/$base_etc/policy/policy.35'
+	check_file '$stage_dir/etc-selinux/$base_etc/contexts/files/file_contexts'
+	check_file '$stage_dir/usr-share-selinux/$base_usr/base.pp'
+	echo "All key files verified in staging -- proceeding with the swap."
+
+	setenforce 0   # if not already permissive
+
+	mv '$STORE_DIR' '${STORE_DIR}.old.$ts' 2>/dev/null || true
+	mv '$STORE_ETC_DIR' '${STORE_ETC_DIR}.old.$ts' 2>/dev/null || true
+	mv '$STORE_USR_DIR' '${STORE_USR_DIR}.old.$ts' 2>/dev/null || true
+
+	mv '$stage_dir/var-lib-selinux/$base_store' '$STORE_DIR'
+	mv '$stage_dir/etc-selinux/$base_etc' '$STORE_ETC_DIR'
+	mv '$stage_dir/usr-share-selinux/$base_usr' '$STORE_USR_DIR'
+
+	# belt-and-braces: --xattrs-include restores the security.selinux xattr
+	# from the tarball, but re-labeling from the live policy is a cheap,
+	# independent second check that costs nothing (Opus, 2026-09-27).
+	restorecon -RFv '$STORE_DIR' '$STORE_ETC_DIR' '$STORE_USR_DIR'
+
+	$marker_block
+
+	load_policy
+	sesearch -A -s aide_t '$RUNNING_POLICY' | head -1   # sanity: command runs, some output
+	getenforce   # confirm still Permissive before trusting anything further
+	echo "Restore complete."
+	EOF
+	chmod +x "$script"
+
+	cat > "$pointer" <<-EOF
+	$header_line
+	=====================================================
+	Run: sudo bash RESTORE.sh
+	(from this directory, or give RESTORE.sh an absolute path -- a text
+	console works fine, no desktop/dbus required)
+
+	RESTORE.sh extracts into a staging dir and verifies key files are
+	present BEFORE touching anything live; the current live trees are
+	renamed aside (*.old.$ts) rather than deleted, so there's something to
+	inspect/recover from if this goes wrong partway. It uses
+	'set -euo pipefail' and stops with a clear "MISSING: <path>" message
+	on the first missing file, rather than a bare 'set -e' that would
+	silently exit an interactive shell with no indication of what failed
+	(fixed 2026-09-27 after two rounds of Opus's review: first the ordering
+	itself -- it used to rm -rf the live trees before ever confirming the
+	tarballs extract cleanly -- then the stop-on-failure mechanism).
+
+	store.tar.gz = $STORE_DIR, etc.tar.gz = $STORE_ETC_DIR, usr.tar.gz =
+	$STORE_USR_DIR -- distinct names, not basename, so they can never
+	collide the way the 2026-09-26 backup did (see
+	tools/.state/store-backups/20260926-225855/README-WHY-BROKEN.txt).
+	$footer_note
+	EOF
+
+	sudo cp "$script" "/root/store-sync-RESTORE-$ts.sh" 2>/dev/null \
+		&& sudo chmod +x "/root/store-sync-RESTORE-$ts.sh" \
+		&& info "RESTORE.sh also copied to /root/store-sync-RESTORE-$ts.sh (readable/runnable from a text console)" \
+		|| info "WARNING: could not copy RESTORE.sh to /root -- it's still at $script"
+	sudo cp "$pointer" "/root/store-sync-RESTORE-$ts.txt" 2>/dev/null \
+		|| info "WARNING: could not copy RESTORE.txt to /root -- it's still at $pointer"
+	info "RESTORE runbook: $pointer (run $script)"
+}
+
 store_backup_all() {
 	# R1: all three trees libsemanage/checkpolicy touch, not just two.
 	#
@@ -130,7 +273,7 @@ store_backup_all() {
 		*) die "store_backup_all: \$1 must be 'pre-sync' or 'post-sync', got '${context:-<empty>}'" ;;
 	esac
 
-	local ts backup_dir runbook
+	local ts backup_dir
 	ts="$(date +%Y%m%d-%H%M%S)"
 	backup_dir="$STORE_BACKUP_DIR/$ts"
 	mkdir -p "$backup_dir"
@@ -204,102 +347,7 @@ store_backup_all() {
 		info "backed up $src -> $tarname ($(du -h "$tarname" | cut -f1)) -- content check OK"
 	done
 
-	# 2026-09-27 (Opus's finding): the runbook used to unconditionally
-	# describe a PRE-sync backup (delete the marker, "restores exactly the
-	# pre-sync state") even when this function was used to snapshot an
-	# already-synced, already-verified state -- following those
-	# instructions on a post-sync backup would have deleted a perfectly
-	# correct marker and wrongly reopened the retired monolithic path.
-	local header_line footer_note marker_block stage_dir base_store base_etc base_usr
-	stage_dir="/tmp/atropa-restore-staging-$ts"
-	base_store="$(basename "$STORE_DIR")"
-	base_etc="$(basename "$STORE_ETC_DIR")"
-	base_usr="$(basename "$STORE_USR_DIR")"
-	if [ "$context" = "pre-sync" ]; then
-		header_line="RESTORE runbook for the $ts store-sync-apply attempt (PRE-sync backup)"
-		footer_note="This restores the PRE-sync state of all three trees, as they were
-immediately before this store-sync-apply attempt began. It does NOT
-restore booleans.local if 'semanage boolean -D' already ran as part of
-that attempt -- re-set those 8 booleans by hand if needed (see the
-sync's own output for the list, or ~/claude-readme/sonnet-5/MEMORY.md)."
-		marker_block="# S6: absolute path, not ~ -- this runs from a root shell, where ~
-# means /root, not \$HOME. Without this, the hook would still treat the
-# restored (stale, pre-sync) store as synced and allow module ops
-# against it.
-sudo rm -f $STORE_MARKER"
-	else
-		local backup_commit
-		backup_commit="$(store_commit_num)"
-		header_line="RESTORE runbook for the $ts backup (POST-sync, verified-good state)"
-		footer_note="This restores the VERIFIED-GOOD POST-sync state of all three trees
-(store commit_num $backup_commit at backup time) -- NOT a pre-sync
-state. Do NOT delete $STORE_MARKER after restoring it: the restored
-state genuinely IS synced, and deleting the marker would wrongly
-reopen the retired monolithic gate/install/load path and re-block
-semodule/semanage for no reason."
-		marker_block="# post-sync backup -- the marker is intentionally left untouched here;
-# see the note at the end of this file."
-	fi
-
-	runbook="$backup_dir/RESTORE.txt"
-	cat > "$runbook" <<-EOF
-	$header_line
-	=====================================================
-	Run this from a root shell (a text console works -- no desktop/dbus
-	required). Extracts into a staging dir and verifies key files are
-	present BEFORE touching anything live; the current live trees are
-	renamed aside (*.old.$ts) rather than deleted, so there's something
-	to inspect/recover from if this goes wrong partway (fixed 2026-09-27
-	after Opus flagged the old version as rm -rf'ing all three live
-	trees before ever confirming the tarballs extract cleanly):
-
-	set -e   # stop on the first failure -- the staging checks below only
-	         # protect you if a failing 'test -f' actually halts the script
-	cd $backup_dir
-	sudo rm -rf $stage_dir
-	sudo mkdir -p $stage_dir/var-lib-selinux $stage_dir/etc-selinux $stage_dir/usr-share-selinux
-	sudo tar --xattrs --xattrs-include='security.selinux' --acls -xzf store.tar.gz -C $stage_dir/var-lib-selinux
-	sudo tar --xattrs --xattrs-include='security.selinux' --acls -xzf etc.tar.gz -C $stage_dir/etc-selinux
-	sudo tar --xattrs --xattrs-include='security.selinux' --acls -xzf usr.tar.gz -C $stage_dir/usr-share-selinux
-
-	# verify key files landed in staging BEFORE touching anything live
-	sudo test -f $stage_dir/var-lib-selinux/$base_store/active/commit_num
-	sudo test -f $stage_dir/var-lib-selinux/$base_store/active/policy.kern
-	sudo test -f $stage_dir/etc-selinux/$base_etc/policy/policy.35
-	sudo test -f $stage_dir/etc-selinux/$base_etc/contexts/files/file_contexts
-	sudo test -f $stage_dir/usr-share-selinux/$base_usr/base.pp
-
-	setenforce 0   # if not already permissive
-
-	sudo mv $STORE_DIR ${STORE_DIR}.old.$ts 2>/dev/null || true
-	sudo mv $STORE_ETC_DIR ${STORE_ETC_DIR}.old.$ts 2>/dev/null || true
-	sudo mv $STORE_USR_DIR ${STORE_USR_DIR}.old.$ts 2>/dev/null || true
-
-	sudo mv $stage_dir/var-lib-selinux/$base_store $STORE_DIR
-	sudo mv $stage_dir/etc-selinux/$base_etc $STORE_ETC_DIR
-	sudo mv $stage_dir/usr-share-selinux/$base_usr $STORE_USR_DIR
-
-	# belt-and-braces: --xattrs-include restores the security.selinux xattr
-	# from the tarball, but re-labeling from the live policy is a cheap,
-	# independent second check that costs nothing (Opus, 2026-09-27).
-	sudo restorecon -RFv $STORE_DIR $STORE_ETC_DIR $STORE_USR_DIR
-
-	$marker_block
-
-	sudo load_policy
-	sesearch -A -s aide_t $RUNNING_POLICY | head -1   # sanity: command runs, some output
-	getenforce   # confirm still Permissive before trusting anything further
-
-	store.tar.gz = $STORE_DIR, etc.tar.gz = $STORE_ETC_DIR, usr.tar.gz =
-	$STORE_USR_DIR -- distinct names, not basename, so they can never
-	collide the way the 2026-09-26 backup did (see
-	tools/.state/store-backups/20260926-225855/README-WHY-BROKEN.txt).
-	$footer_note
-	EOF
-	sudo cp "$runbook" "/root/store-sync-RESTORE-$ts.txt" 2>/dev/null \
-		&& info "RESTORE runbook also copied to /root/store-sync-RESTORE-$ts.txt (readable from a text console)" \
-		|| info "WARNING: could not copy RESTORE runbook to /root -- it's still at $runbook"
-	info "RESTORE runbook: $runbook"
+	store_write_restore_runbook "$context" "$backup_dir" "$ts"
 }
 
 store_build_modular() {
@@ -1260,15 +1308,15 @@ cmd_store_sync_apply() {
 	sudo semanage boolean -D
 
 	local booleans_local_path b rc
+	rc=0
 	run_sediff_stats "$RUNNING_POLICY" "$INSTALLED_POLICY" || rc=$?
-	rc="${rc:-0}"
 	case "$rc" in
 		2) die "post-'semanage boolean -D' sediff check could not complete -- do NOT write the marker: $SEDIFF_OUT" ;;
 		1) die "post-'semanage boolean -D' sediff is NOT empty -- running policy does not match installed:
 $SEDIFF_OUT" ;;
 	esac
+	rc=0
 	run_sediff_stats "$pre_clear_copy" "$INSTALLED_POLICY" || rc=$?
-	rc="${rc:-0}"
 	rm -f "$pre_clear_copy"
 	case "$rc" in
 		2) die "post-'semanage boolean -D' pre/post comparison could not complete -- do NOT write the marker: $SEDIFF_OUT" ;;
@@ -1356,8 +1404,8 @@ cmd_store_sync_finalize() {
 	echo "=== 1/6: running policy == installed policy (sediff) ==="
 	sec_ok=1
 	local rc
+	rc=0
 	run_sediff_stats "$RUNNING_POLICY" "$INSTALLED_POLICY" || rc=$?
-	rc="${rc:-0}"
 	case "$rc" in
 		2) info "FAIL: sediff check could not complete: $SEDIFF_OUT"; sec_ok=0 ;;
 		1) info "FAIL: running policy differs from installed:
@@ -1373,8 +1421,8 @@ $SEDIFF_OUT"; sec_ok=0 ;;
 		info "FAIL: no dry-run scratch copy at $scratch_policy -- was store-sync-dryrun/apply ever run against this checkout? Cannot cross-check without it."
 		sec_ok=0
 	else
+		rc=0
 		run_sediff_stats "$scratch_policy" "$INSTALLED_POLICY" || rc=$?
-		rc="${rc:-0}"
 		case "$rc" in
 			2) info "FAIL: sediff check could not complete: $SEDIFF_OUT"; sec_ok=0 ;;
 			1) info "FAIL: dry-run scratch policy.35 differs semantically from installed:
