@@ -1424,6 +1424,10 @@ corecmd_exec_shell(systemd_modules_load_t)
 fs_getattr_cgroup(systemd_modules_load_t)
 fs_getattr_xattr_fs(systemd_modules_load_t)
 fs_getattr_nsfs_files(systemd_modules_load_t)
+# Q4 (2026-09-27/28): reads cpuset.cpus.effective under its own cgroup to
+# decide CPU affinity for module-load helper processes -- real observed
+# denial is cgroup_t:file { read open getattr ioctl } under enforcing.
+fs_read_cgroup_files(systemd_modules_load_t)
 
 kernel_load_module(systemd_modules_load_t)
 kernel_read_kernel_sysctls(systemd_modules_load_t)
