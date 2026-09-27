@@ -112,6 +112,24 @@ store_etc_tree_sha() {
 
 store_backup_all() {
 	# R1: all three trees libsemanage/checkpolicy touch, not just two.
+	#
+	# $1: "pre-sync" (called from within cmd_store_sync_apply, before any
+	# change is made -- restoring this backup UNDOES the sync attempt, so
+	# the runbook must delete the marker too) or "post-sync" (an ad-hoc
+	# snapshot of an already-synced, already-verified state -- restoring
+	# THIS backup reproduces that same synced state, so the marker must
+	# NOT be touched, or a restore would wrongly reopen the retired
+	# monolithic path and re-block semodule/semanage). Required: the
+	# original runbook template hardcoded pre-sync wording even when this
+	# function was used to snapshot an already-synced state (Opus,
+	# 2026-09-27) -- the wrongness wasn't in the backup itself, it was in
+	# describing a post-sync backup with pre-sync instructions.
+	local context="$1"
+	case "$context" in
+		pre-sync|post-sync) ;;
+		*) die "store_backup_all: \$1 must be 'pre-sync' or 'post-sync', got '${context:-<empty>}'" ;;
+	esac
+
 	local ts backup_dir runbook
 	ts="$(date +%Y%m%d-%H%M%S)"
 	backup_dir="$STORE_BACKUP_DIR/$ts"
@@ -136,8 +154,19 @@ store_backup_all() {
 		esac
 		local src="${!src_name}" tarname base listing
 		tarname="$backup_dir/$label.tar.gz"
-		[ -d "$src" ] || { info "WARNING: $src does not exist, skipping backup of it"; continue; }
-		sudo tar --xattrs --selinux --acls -czf "$tarname" -C "$(dirname "$src")" "$(basename "$src")"
+		# A missing source tree used to be a WARNING+skip -- silently
+		# proceeding with 2 of 3 trees backed up is worse than refusing
+		# outright, since a later restore would have no idea a tree is
+		# missing until it's needed (Opus, 2026-09-27).
+		[ -d "$src" ] || die "$src does not exist -- refusing to take a partial backup. Investigate before retrying."
+		# --selinux is a silent no-op on this system's tar (Arch's GNU tar
+		# 1.35 has no libselinux support built in) -- security.selinux
+		# labels were NOT being preserved despite the flag appearing to
+		# ask for them. --xattrs alone also excludes the security.*
+		# namespace by default (a safety default, not a bug) -- explicitly
+		# include it. Opus round-tripped this in scratch and confirmed
+		# labels survive create+extract with this combination.
+		sudo tar --xattrs --xattrs-include='security.selinux' --acls -czf "$tarname" -C "$(dirname "$src")" "$(basename "$src")"
 		sudo tar -tzf "$tarname" >/dev/null || die "backup tar for $src failed verification (tar -tzf)"
 
 		# Positive content check: `tar -tzf` exiting 0 only proves the
@@ -145,49 +174,115 @@ store_backup_all() {
 		# every one of the three collided tarballs above would have
 		# passed that check too. Fail closed on the specific files each
 		# tree must contain.
+		#
+		# Here-string, not `echo "$listing" | grep -qx ...`: the store
+		# listing alone is ~83KB, bigger than a pipe's buffer -- an early
+		# grep match can close its stdin while `echo` is still writing,
+		# SIGPIPEing the echo (exit 141) and tripping `|| die` on a
+		# perfectly good backup. Only ever passed before by luck of
+		# listing order (Opus, 2026-09-27). <<< avoids the pipe entirely.
 		base="$(basename "$src")"
 		listing="$(sudo tar -tzf "$tarname")"
 		case "$label" in
 			store)
-				echo "$listing" | grep -qx "$base/active/commit_num" \
+				grep -qx "$base/active/commit_num" <<<"$listing" \
 					|| die "backup tar for $src ($tarname) is missing $base/active/commit_num -- refusing to trust this backup"
-				echo "$listing" | grep -qx "$base/active/policy.kern" \
+				grep -qx "$base/active/policy.kern" <<<"$listing" \
 					|| die "backup tar for $src ($tarname) is missing $base/active/policy.kern -- refusing to trust this backup"
 				;;
 			etc)
-				echo "$listing" | grep -qx "$base/policy/policy.35" \
+				grep -qx "$base/policy/policy.35" <<<"$listing" \
 					|| die "backup tar for $src ($tarname) is missing $base/policy/policy.35 -- refusing to trust this backup"
-				echo "$listing" | grep -qx "$base/contexts/files/file_contexts" \
+				grep -qx "$base/contexts/files/file_contexts" <<<"$listing" \
 					|| die "backup tar for $src ($tarname) is missing $base/contexts/files/file_contexts -- refusing to trust this backup"
 				;;
 			usr)
-				echo "$listing" | grep -qx "$base/base.pp" \
+				grep -qx "$base/base.pp" <<<"$listing" \
 					|| die "backup tar for $src ($tarname) is missing $base/base.pp -- refusing to trust this backup"
 				;;
 		esac
 		info "backed up $src -> $tarname ($(du -h "$tarname" | cut -f1)) -- content check OK"
 	done
 
+	# 2026-09-27 (Opus's finding): the runbook used to unconditionally
+	# describe a PRE-sync backup (delete the marker, "restores exactly the
+	# pre-sync state") even when this function was used to snapshot an
+	# already-synced, already-verified state -- following those
+	# instructions on a post-sync backup would have deleted a perfectly
+	# correct marker and wrongly reopened the retired monolithic path.
+	local header_line footer_note marker_block stage_dir base_store base_etc base_usr
+	stage_dir="/tmp/atropa-restore-staging-$ts"
+	base_store="$(basename "$STORE_DIR")"
+	base_etc="$(basename "$STORE_ETC_DIR")"
+	base_usr="$(basename "$STORE_USR_DIR")"
+	if [ "$context" = "pre-sync" ]; then
+		header_line="RESTORE runbook for the $ts store-sync-apply attempt (PRE-sync backup)"
+		footer_note="This restores the PRE-sync state of all three trees, as they were
+immediately before this store-sync-apply attempt began. It does NOT
+restore booleans.local if 'semanage boolean -D' already ran as part of
+that attempt -- re-set those 8 booleans by hand if needed (see the
+sync's own output for the list, or ~/claude-readme/sonnet-5/MEMORY.md)."
+		marker_block="# S6: absolute path, not ~ -- this runs from a root shell, where ~
+# means /root, not \$HOME. Without this, the hook would still treat the
+# restored (stale, pre-sync) store as synced and allow module ops
+# against it.
+sudo rm -f $STORE_MARKER"
+	else
+		local backup_commit
+		backup_commit="$(store_commit_num)"
+		header_line="RESTORE runbook for the $ts backup (POST-sync, verified-good state)"
+		footer_note="This restores the VERIFIED-GOOD POST-sync state of all three trees
+(store commit_num $backup_commit at backup time) -- NOT a pre-sync
+state. Do NOT delete $STORE_MARKER after restoring it: the restored
+state genuinely IS synced, and deleting the marker would wrongly
+reopen the retired monolithic gate/install/load path and re-block
+semodule/semanage for no reason."
+		marker_block="# post-sync backup -- the marker is intentionally left untouched here;
+# see the note at the end of this file."
+	fi
+
 	runbook="$backup_dir/RESTORE.txt"
 	cat > "$runbook" <<-EOF
-	RESTORE runbook for the $ts store-sync-apply attempt
+	$header_line
 	=====================================================
-	Written before any live change was made. If the sync fails partway,
-	or verification fails after a real run, run this from a root shell
-	(a text console works -- no desktop/dbus required):
+	Run this from a root shell (a text console works -- no desktop/dbus
+	required). Extracts into a staging dir and verifies key files are
+	present BEFORE touching anything live; the current live trees are
+	renamed aside (*.old.$ts) rather than deleted, so there's something
+	to inspect/recover from if this goes wrong partway (fixed 2026-09-27
+	after Opus flagged the old version as rm -rf'ing all three live
+	trees before ever confirming the tarballs extract cleanly):
+
+	cd $backup_dir
+	sudo rm -rf $stage_dir
+	sudo mkdir -p $stage_dir/var-lib-selinux $stage_dir/etc-selinux $stage_dir/usr-share-selinux
+	sudo tar --xattrs --xattrs-include='security.selinux' --acls -xzf store.tar.gz -C $stage_dir/var-lib-selinux
+	sudo tar --xattrs --xattrs-include='security.selinux' --acls -xzf etc.tar.gz -C $stage_dir/etc-selinux
+	sudo tar --xattrs --xattrs-include='security.selinux' --acls -xzf usr.tar.gz -C $stage_dir/usr-share-selinux
+
+	# verify key files landed in staging BEFORE touching anything live
+	sudo test -f $stage_dir/var-lib-selinux/$base_store/active/commit_num
+	sudo test -f $stage_dir/var-lib-selinux/$base_store/active/policy.kern
+	sudo test -f $stage_dir/etc-selinux/$base_etc/policy/policy.35
+	sudo test -f $stage_dir/etc-selinux/$base_etc/contexts/files/file_contexts
+	sudo test -f $stage_dir/usr-share-selinux/$base_usr/base.pp
 
 	setenforce 0   # if not already permissive
 
-	cd $backup_dir
-	sudo rm -rf ${STORE_DIR} ${STORE_ETC_DIR} ${STORE_USR_DIR}
-	sudo tar --xattrs --selinux --acls -xzf store.tar.gz -C $(dirname "$STORE_DIR")
-	sudo tar --xattrs --selinux --acls -xzf etc.tar.gz -C $(dirname "$STORE_ETC_DIR")
-	sudo tar --xattrs --selinux --acls -xzf usr.tar.gz -C $(dirname "$STORE_USR_DIR")
+	sudo mv $STORE_DIR ${STORE_DIR}.old.$ts 2>/dev/null || true
+	sudo mv $STORE_ETC_DIR ${STORE_ETC_DIR}.old.$ts 2>/dev/null || true
+	sudo mv $STORE_USR_DIR ${STORE_USR_DIR}.old.$ts 2>/dev/null || true
 
-	# S6: absolute path, not ~ -- this runs from a root shell, where ~
-	# means /root, not $HOME. Without this, the hook would still treat the
-	# restored (stale) store as synced and allow module ops against it.
-	sudo rm -f $STORE_MARKER
+	sudo mv $stage_dir/var-lib-selinux/$base_store $STORE_DIR
+	sudo mv $stage_dir/etc-selinux/$base_etc $STORE_ETC_DIR
+	sudo mv $stage_dir/usr-share-selinux/$base_usr $STORE_USR_DIR
+
+	# belt-and-braces: --xattrs-include restores the security.selinux xattr
+	# from the tarball, but re-labeling from the live policy is a cheap,
+	# independent second check that costs nothing (Opus, 2026-09-27).
+	sudo restorecon -RFv $STORE_DIR $STORE_ETC_DIR $STORE_USR_DIR
+
+	$marker_block
 
 	sudo load_policy
 	sesearch -A -s aide_t $RUNNING_POLICY | head -1   # sanity: command runs, some output
@@ -197,10 +292,7 @@ store_backup_all() {
 	$STORE_USR_DIR -- distinct names, not basename, so they can never
 	collide the way the 2026-09-26 backup did (see
 	tools/.state/store-backups/20260926-225855/README-WHY-BROKEN.txt).
-	This restores exactly the pre-sync state of all three trees. It does
-	NOT restore booleans.local if 'semanage boolean -D' already ran --
-	re-set those 8 booleans by hand if needed (see the sync's own output
-	for the list, or ~/claude-readme/sonnet-5/MEMORY.md).
+	$footer_note
 	EOF
 	sudo cp "$runbook" "/root/store-sync-RESTORE-$ts.txt" 2>/dev/null \
 		&& info "RESTORE runbook also copied to /root/store-sync-RESTORE-$ts.txt (readable from a text console)" \
@@ -1054,7 +1146,7 @@ cmd_store_sync_apply() {
 	info "pre-sync commit_num=$pre_commit, enforce=$(getenforce)"
 
 	echo "=== 2/8: backup (var/lib, etc, usr/share) ==="
-	store_backup_all
+	store_backup_all pre-sync
 
 	echo "=== 3/8: unprivileged modular build (MONOLITHIC=n clean first -- B2) ==="
 	store_build_modular
