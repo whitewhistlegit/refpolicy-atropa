@@ -190,6 +190,17 @@ semodule/semanage for no reason."
 	# afterward, print the exact commands to undo everything done so far,
 	# in the right order (whitewhistle's call + Opus's suggestion,
 	# 2026-09-27, after the earlier move-aside/swap-in hardening).
+	#
+	# RESTORE_RUN_TS is computed HERE, at actual run time -- not baked in
+	# at generation time like the backup's own \$ts -- so that running
+	# this same RESTORE.sh a second time (e.g. after a first attempt
+	# failed partway and the operator re-runs it) gets a FRESH move-aside
+	# destination. Opus's sandbox testing (P2): with a baked-in suffix, a
+	# second run whose move-aside destination already exists as a
+	# directory would silently nest the current tree inside the leftover
+	# one from the first run, and the recorded undo would then move the
+	# WRONG (nested/mixed) tree back.
+	RESTORE_RUN_TS="\$(date +%Y%m%d-%H%M%S)"
 	DONE_UNDO=()
 	do_mv() {
 		local use_t=0
@@ -245,9 +256,9 @@ semodule/semanage for no reason."
 	# + whitewhistle's call, 2026-09-27). '[ -e X ] &&' only skips the move
 	# when X genuinely doesn't exist (verified: does not trip set -e); a
 	# real mv failure with X present is now fatal, as it should be.
-	[ -e '$STORE_DIR' ] && do_mv '$STORE_DIR' '${STORE_DIR}.old.$ts'
-	[ -e '$STORE_ETC_DIR' ] && do_mv '$STORE_ETC_DIR' '${STORE_ETC_DIR}.old.$ts'
-	[ -e '$STORE_USR_DIR' ] && do_mv '$STORE_USR_DIR' '${STORE_USR_DIR}.old.$ts'
+	[ -e '$STORE_DIR' ] && do_mv -T '$STORE_DIR' '$STORE_DIR'".old.\$RESTORE_RUN_TS"
+	[ -e '$STORE_ETC_DIR' ] && do_mv -T '$STORE_ETC_DIR' '$STORE_ETC_DIR'".old.\$RESTORE_RUN_TS"
+	[ -e '$STORE_USR_DIR' ] && do_mv -T '$STORE_USR_DIR' '$STORE_USR_DIR'".old.\$RESTORE_RUN_TS"
 
 	# -T: treat the destination as a plain file/dir target, not "move
 	# INTO it if it exists" -- without this, if the move-aside above ever
@@ -256,6 +267,19 @@ semodule/semanage for no reason."
 	do_mv -T '$stage_dir/var-lib-selinux/$base_store' '$STORE_DIR'
 	do_mv -T '$stage_dir/etc-selinux/$base_etc' '$STORE_ETC_DIR'
 	do_mv -T '$stage_dir/usr-share-selinux/$base_usr' '$STORE_USR_DIR'
+
+	# All 6 moves (3 move-aside + 3 swap-in) are done -- the restore
+	# itself succeeded. Disarm the trap now: without this, a failure in
+	# any of the READ-ONLY steps below (restorecon, load_policy, the
+	# sesearch sanity check) would still fire on_error and print all 6
+	# undo commands, telling the operator to roll back a restore that
+	# actually completed correctly (Opus's sandbox testing, 2026-09-27 --
+	# their P1 case).
+	trap - ERR
+	echo "All three trees swapped in successfully. Remaining steps are"
+	echo "read-only re-labeling/verification -- if one of THEM fails from"
+	echo "here on, the file restore itself is still good; do not run any"
+	echo "of the undo commands above for a failure past this point."
 
 	# belt-and-braces: --xattrs-include restores the security.selinux xattr
 	# from the tarball, but re-labeling from the live policy is a cheap,
@@ -280,8 +304,11 @@ semodule/semanage for no reason."
 
 	RESTORE.sh extracts into a staging dir and verifies key files are
 	present BEFORE touching anything live; the current live trees are
-	renamed aside (*.old.$ts) rather than deleted, so there's something to
-	inspect/recover from if this goes wrong partway. It uses
+	renamed aside (*.old.<run-timestamp>, generated fresh each time this
+	script actually runs -- so re-running it after a failed attempt gets
+	a new destination instead of colliding with the first attempt's
+	leftovers) rather than deleted, so there's something to inspect/
+	recover from if this goes wrong partway. It uses
 	'set -euo pipefail' and stops with a clear "MISSING: <path>" message
 	on the first missing file, rather than a bare 'set -e' that would
 	silently exit an interactive shell with no indication of what failed
@@ -289,9 +316,15 @@ semodule/semanage for no reason."
 	itself -- it used to rm -rf the live trees before ever confirming the
 	tarballs extract cleanly -- then the stop-on-failure mechanism). The
 	three-tree swap itself is not atomic: if any single 'mv' fails partway
-	through it, an error trap prints the exact 'sudo mv ...' commands to
-	undo everything that already succeeded, in the right order -- read
-	them carefully and run them before trying anything else.
+	through the SIX moves (3 move-aside + 3 swap-in), an error trap prints
+	the exact 'sudo mv ...' commands to undo everything that already
+	succeeded, in the right order -- read them carefully and run them
+	before trying anything else. That trap is disarmed the moment all six
+	moves finish, though: a failure AFTER that point (restorecon,
+	load_policy, the sesearch check) means the file restore itself is
+	already correct and complete -- do not run any undo commands for a
+	failure that happens that late, the script says so explicitly if it
+	gets there.
 
 	store.tar.gz = $STORE_DIR, etc.tar.gz = $STORE_ETC_DIR, usr.tar.gz =
 	$STORE_USR_DIR -- distinct names, not basename, so they can never
