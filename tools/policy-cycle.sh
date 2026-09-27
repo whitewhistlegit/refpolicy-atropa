@@ -8,11 +8,16 @@
 # (a fail-closed allowlist over sediff's structured output), deliberately
 # not left to whoever (human or LLM) is driving the cycle to eyeball --
 # that's the whole point of this tool existing.
-set -euo pipefail
+set -Eeuo pipefail
 # A `set -e` exit is otherwise silent about WHERE it happened -- Opus's
 # dryrun #2 caught a case (an empty grep inside a command substitution,
 # under pipefail) that killed a store-sync-dryrun check with no message at
 # all. Every unexpected exit from here on prints the failing line number.
+# -E: without it, this trap only fires for a failure at the top level, not
+# one inside a function -- and nearly everything this script does runs
+# inside a function. Without -E the failure would still be fatal (`set -e`
+# still exits), just silently, with no line number printed (Opus's
+# adversarial pass on store-sync-finalize, 2026-09-27).
 trap 'echo "policy-cycle: unexpected exit (see the command at line $LINENO above)" >&2' ERR
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -380,6 +385,24 @@ die() {
 info() { echo "policy-cycle: $*"; }
 
 sha256_of() { sha256sum "$1" 2>/dev/null | cut -d' ' -f1; }
+
+# Prints the count of non-comment/non-blank lines in booleans.local, or the
+# literal string UNREADABLE if the file couldn't be read at all (permission
+# error, I/O error, etc). The old `... || true` + `${var:-0}` idiom at both
+# call sites (apply's step 8, finalize's check 4) collapsed BOTH "grep ran
+# fine and found zero matches" (exit 1, expected) AND "grep couldn't even
+# open the file" (exit 2, a real problem) down to the same "0" -- silently
+# treating an unreadable booleans.local as if it had been verified empty
+# (Opus's adversarial pass, 2026-09-27). Distinguish them explicitly.
+store_booleans_local_status() {
+	local path="$1" out status
+	out="$(sudo grep -vc '^#\|^$' "$path" 2>/dev/null)" && status=0 || status=$?
+	if [ "$status" -eq 0 ] || [ "$status" -eq 1 ]; then
+		echo "${out:-0}"
+	else
+		echo "UNREADABLE"
+	fi
+}
 
 cmd_build() {
 	cd "$REPO"
@@ -1070,13 +1093,9 @@ $pre_post_diff"
 	booleans_local_path="$(sudo find "$STORE_DIR" -maxdepth 3 -iname booleans.local 2>/dev/null | head -1)"
 	if [ -n "$booleans_local_path" ]; then
 		local remaining_booleans
-		# `grep -c` already prints "0" on no match but exits 1 -- the old
-		# `|| echo 0` fallback then ALSO fired and appended a second "0",
-		# giving "0\n0" and breaking the -eq test below (Opus, dryrun #2:
-		# reproduced as apply dying on this exact line in the success case,
-		# right after the real sync had already succeeded).
-		remaining_booleans="$(sudo grep -vc '^#\|^$' "$booleans_local_path" 2>/dev/null || true)"
-		remaining_booleans="${remaining_booleans:-0}"
+		remaining_booleans="$(store_booleans_local_status "$booleans_local_path")"
+		[ "$remaining_booleans" != "UNREADABLE" ] \
+			|| die "could not read booleans.local ($booleans_local_path) to verify it's empty after 'semanage boolean -D' -- treating as unverified, not safe to assume empty. Do NOT write the marker."
 		[ "$remaining_booleans" -eq 0 ] || die "booleans.local ($booleans_local_path) is not empty after 'semanage boolean -D' ($remaining_booleans entries remain). Do NOT write the marker."
 	fi
 	info "post-clear verify OK: running==installed, policy.35 unchanged, all 10 booleans at their compiled defaults, booleans.local empty"
@@ -1115,6 +1134,12 @@ cmd_store_sync_finalize() {
 	local dry_run=0
 	case "${1:-}" in
 		--dry-run) dry_run=1; shift ;;
+		"") ;;
+		# Opus's adversarial pass, 2026-09-27: an unrecognized arg (a typo
+		# like --dryrun) used to fall straight through to a REAL run --
+		# exactly the failure mode --dry-run exists to prevent. Refuse
+		# instead of guessing.
+		*) die "store-sync-finalize: unrecognized argument '$1' -- the only accepted flag is --dry-run" ;;
 	esac
 
 	[ "$(id -u)" -eq 0 ] && die "run this as your normal user (with sudo available), not as root."
@@ -1196,9 +1221,11 @@ $scratch_vs_installed"
 	local booleans_local_path remaining_booleans b
 	booleans_local_path="$(sudo find "$STORE_DIR" -maxdepth 3 -iname booleans.local 2>/dev/null | head -1)"
 	if [ -n "$booleans_local_path" ]; then
-		remaining_booleans="$(sudo grep -vc '^#\|^$' "$booleans_local_path" 2>/dev/null || true)"
-		remaining_booleans="${remaining_booleans:-0}"
-		if [ "$remaining_booleans" -ne 0 ]; then
+		remaining_booleans="$(store_booleans_local_status "$booleans_local_path")"
+		if [ "$remaining_booleans" = "UNREADABLE" ]; then
+			info "FAIL: could not read booleans.local ($booleans_local_path) to verify it's empty -- treating as unverified, not safe to assume empty"
+			sec_ok=0
+		elif [ "$remaining_booleans" -ne 0 ]; then
 			info "FAIL: booleans.local ($booleans_local_path) has $remaining_booleans entries, expected 0"
 			sec_ok=0
 		fi
