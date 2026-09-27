@@ -116,13 +116,56 @@ store_backup_all() {
 	ts="$(date +%Y%m%d-%H%M%S)"
 	backup_dir="$STORE_BACKUP_DIR/$ts"
 	mkdir -p "$backup_dir"
+
+	# Fixed 2026-09-27 (Opus's finding): tarballs used to be named
+	# "$(basename "$src").tar.gz", but all three trees share the same
+	# basename ("atropa-refpolicy") -- every backup in this loop silently
+	# overwrote the previous one, and only the LAST tree's tarball ever
+	# survived. The 2026-09-26 real-run backup was affected: its single
+	# surviving tarball held only the /usr/share tree (429 .pp files),
+	# with no active/ (no module store) and no policy.35 (no /etc tree) --
+	# the RESTORE runbook it generated would have DESTROYED the store, not
+	# restored it, had anyone followed it. Distinct labels per tree now,
+	# never basename.
+	local src_name label
 	for src_name in STORE_DIR STORE_ETC_DIR STORE_USR_DIR; do
-		local src="${!src_name}" tarname
-		tarname="$backup_dir/$(basename "$src").tar.gz"
+		case "$src_name" in
+			STORE_DIR) label=store ;;
+			STORE_ETC_DIR) label=etc ;;
+			STORE_USR_DIR) label=usr ;;
+		esac
+		local src="${!src_name}" tarname base listing
+		tarname="$backup_dir/$label.tar.gz"
 		[ -d "$src" ] || { info "WARNING: $src does not exist, skipping backup of it"; continue; }
 		sudo tar --xattrs --selinux --acls -czf "$tarname" -C "$(dirname "$src")" "$(basename "$src")"
 		sudo tar -tzf "$tarname" >/dev/null || die "backup tar for $src failed verification (tar -tzf)"
-		info "backed up $src -> $tarname ($(du -h "$tarname" | cut -f1))"
+
+		# Positive content check: `tar -tzf` exiting 0 only proves the
+		# archive is well-formed, NOT that it holds the right tree --
+		# every one of the three collided tarballs above would have
+		# passed that check too. Fail closed on the specific files each
+		# tree must contain.
+		base="$(basename "$src")"
+		listing="$(sudo tar -tzf "$tarname")"
+		case "$label" in
+			store)
+				echo "$listing" | grep -qx "$base/active/commit_num" \
+					|| die "backup tar for $src ($tarname) is missing $base/active/commit_num -- refusing to trust this backup"
+				echo "$listing" | grep -qx "$base/active/policy.kern" \
+					|| die "backup tar for $src ($tarname) is missing $base/active/policy.kern -- refusing to trust this backup"
+				;;
+			etc)
+				echo "$listing" | grep -qx "$base/policy/policy.35" \
+					|| die "backup tar for $src ($tarname) is missing $base/policy/policy.35 -- refusing to trust this backup"
+				echo "$listing" | grep -qx "$base/contexts/files/file_contexts" \
+					|| die "backup tar for $src ($tarname) is missing $base/contexts/files/file_contexts -- refusing to trust this backup"
+				;;
+			usr)
+				echo "$listing" | grep -qx "$base/base.pp" \
+					|| die "backup tar for $src ($tarname) is missing $base/base.pp -- refusing to trust this backup"
+				;;
+		esac
+		info "backed up $src -> $tarname ($(du -h "$tarname" | cut -f1)) -- content check OK"
 	done
 
 	runbook="$backup_dir/RESTORE.txt"
@@ -137,9 +180,9 @@ store_backup_all() {
 
 	cd $backup_dir
 	sudo rm -rf ${STORE_DIR} ${STORE_ETC_DIR} ${STORE_USR_DIR}
-	sudo tar --xattrs --selinux --acls -xzf $(basename "$STORE_DIR").tar.gz -C $(dirname "$STORE_DIR")
-	sudo tar --xattrs --selinux --acls -xzf $(basename "$STORE_ETC_DIR").tar.gz -C $(dirname "$STORE_ETC_DIR")
-	sudo tar --xattrs --selinux --acls -xzf $(basename "$STORE_USR_DIR").tar.gz -C $(dirname "$STORE_USR_DIR")
+	sudo tar --xattrs --selinux --acls -xzf store.tar.gz -C $(dirname "$STORE_DIR")
+	sudo tar --xattrs --selinux --acls -xzf etc.tar.gz -C $(dirname "$STORE_ETC_DIR")
+	sudo tar --xattrs --selinux --acls -xzf usr.tar.gz -C $(dirname "$STORE_USR_DIR")
 
 	# S6: absolute path, not ~ -- this runs from a root shell, where ~
 	# means /root, not $HOME. Without this, the hook would still treat the
@@ -150,6 +193,10 @@ store_backup_all() {
 	sesearch -A -s aide_t $RUNNING_POLICY | head -1   # sanity: command runs, some output
 	getenforce   # confirm still Permissive before trusting anything further
 
+	store.tar.gz = $STORE_DIR, etc.tar.gz = $STORE_ETC_DIR, usr.tar.gz =
+	$STORE_USR_DIR -- distinct names, not basename, so they can never
+	collide the way the 2026-09-26 backup did (see
+	tools/.state/store-backups/20260926-225855/README-WHY-BROKEN.txt).
 	This restores exactly the pre-sync state of all three trees. It does
 	NOT restore booleans.local if 'semanage boolean -D' already ran --
 	re-set those 8 booleans by hand if needed (see the sync's own output
