@@ -180,6 +180,43 @@ semodule/semanage for no reason."
 		fi
 	}
 
+	# The three-tree swap below is NOT atomic -- if it fails partway (a
+	# permission error, disk full, etc mid-way through the 6 mv's), the
+	# live system is left in a safe but mixed state (nothing corrupted,
+	# but some trees old and some new/missing). That's not silent
+	# corruption, but recovering from it by hand under stress, by typing
+	# the right mv command for exactly the right tree, is itself a real
+	# risk. Track every mv as it succeeds and, if anything fails
+	# afterward, print the exact commands to undo everything done so far,
+	# in the right order (whitewhistle's call + Opus's suggestion,
+	# 2026-09-27, after the earlier move-aside/swap-in hardening).
+	DONE_UNDO=()
+	do_mv() {
+		local use_t=0
+		if [ "\$1" = "-T" ]; then use_t=1; shift; fi
+		if [ "\$use_t" -eq 1 ]; then
+			mv -T "\$1" "\$2" || return 1
+		else
+			mv "\$1" "\$2" || return 1
+		fi
+		DONE_UNDO+=("mv -T '\$2' '\$1'")
+	}
+	on_error() {
+		echo >&2
+		echo "FAILED partway through the restore (see the error above)." >&2
+		if [ "\${#DONE_UNDO[@]}" -eq 0 ]; then
+			echo "Nothing was moved yet -- the live trees are untouched." >&2
+		else
+			echo "These steps already completed. To undo them, run the" >&2
+			echo "following commands IN THIS EXACT ORDER:" >&2
+			local i
+			for (( i=\${#DONE_UNDO[@]}-1; i>=0; i-- )); do
+				echo "  sudo \${DONE_UNDO[i]}" >&2
+			done
+		fi
+	}
+	trap on_error ERR
+
 	cd '$backup_dir'
 	rm -rf '$stage_dir'
 	mkdir -p '$stage_dir/var-lib-selinux' '$stage_dir/etc-selinux' '$stage_dir/usr-share-selinux'
@@ -205,20 +242,20 @@ semodule/semanage for no reason."
 	# actually restored. A disaster-recovery script run by someone at a
 	# bad moment is exactly where a silent nest-instead-of-replace bug is
 	# most likely to happen and least likely to be noticed (Opus's review
-	# + whitewhistle's call, 2026-09-27). `[ -e X ] &&` only skips the move
+	# + whitewhistle's call, 2026-09-27). '[ -e X ] &&' only skips the move
 	# when X genuinely doesn't exist (verified: does not trip set -e); a
 	# real mv failure with X present is now fatal, as it should be.
-	[ -e '$STORE_DIR' ] && mv '$STORE_DIR' '${STORE_DIR}.old.$ts'
-	[ -e '$STORE_ETC_DIR' ] && mv '$STORE_ETC_DIR' '${STORE_ETC_DIR}.old.$ts'
-	[ -e '$STORE_USR_DIR' ] && mv '$STORE_USR_DIR' '${STORE_USR_DIR}.old.$ts'
+	[ -e '$STORE_DIR' ] && do_mv '$STORE_DIR' '${STORE_DIR}.old.$ts'
+	[ -e '$STORE_ETC_DIR' ] && do_mv '$STORE_ETC_DIR' '${STORE_ETC_DIR}.old.$ts'
+	[ -e '$STORE_USR_DIR' ] && do_mv '$STORE_USR_DIR' '${STORE_USR_DIR}.old.$ts'
 
 	# -T: treat the destination as a plain file/dir target, not "move
 	# INTO it if it exists" -- without this, if the move-aside above ever
 	# left the destination in place for any reason, this would silently
 	# nest the staged tree one level deeper instead of failing loudly.
-	mv -T '$stage_dir/var-lib-selinux/$base_store' '$STORE_DIR'
-	mv -T '$stage_dir/etc-selinux/$base_etc' '$STORE_ETC_DIR'
-	mv -T '$stage_dir/usr-share-selinux/$base_usr' '$STORE_USR_DIR'
+	do_mv -T '$stage_dir/var-lib-selinux/$base_store' '$STORE_DIR'
+	do_mv -T '$stage_dir/etc-selinux/$base_etc' '$STORE_ETC_DIR'
+	do_mv -T '$stage_dir/usr-share-selinux/$base_usr' '$STORE_USR_DIR'
 
 	# belt-and-braces: --xattrs-include restores the security.selinux xattr
 	# from the tarball, but re-labeling from the live policy is a cheap,
@@ -250,7 +287,11 @@ semodule/semanage for no reason."
 	silently exit an interactive shell with no indication of what failed
 	(fixed 2026-09-27 after two rounds of Opus's review: first the ordering
 	itself -- it used to rm -rf the live trees before ever confirming the
-	tarballs extract cleanly -- then the stop-on-failure mechanism).
+	tarballs extract cleanly -- then the stop-on-failure mechanism). The
+	three-tree swap itself is not atomic: if any single 'mv' fails partway
+	through it, an error trap prints the exact 'sudo mv ...' commands to
+	undo everything that already succeeded, in the right order -- read
+	them carefully and run them before trying anything else.
 
 	store.tar.gz = $STORE_DIR, etc.tar.gz = $STORE_ETC_DIR, usr.tar.gz =
 	$STORE_USR_DIR -- distinct names, not basename, so they can never
