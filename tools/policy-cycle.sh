@@ -725,6 +725,138 @@ If this looks like a memory error (MemoryError / cannot allocate memory), close 
 	return 2
 }
 
+# Q3/item 0: the steady-state modular install path, now that the store is
+# synced and the monolithic build/gate/install/load quartet above is
+# retired (die_if_store_synced). Unlike store_build_argv (built once for the
+# one-time legacy-module migration, and still carries that fixed -r list),
+# this assumes the steady-state invariant Q1 established: zero foreign
+# modules. It reasserts that live, every time, rather than trusting it --
+# a store that's drifted back to having foreign modules is exactly the
+# R-store regression TEAM.md warns about, and this is the first place that
+# would notice it.
+store_install_argv() {
+	local foreign
+	foreign="$(store_foreign_modules)"
+	[ -z "$foreign" ] || die "store has foreign modules present ($foreign) -- store-install doesn't know how to remove them safely (that was a one-time migration step, see store_build_argv). Investigate before proceeding: either they're expected and this script needs updating, or the store has regressed (R-store caveat in TEAM.md)."
+
+	STORE_SEMODULE_ARGS=(-s "$POLICY_NAME" -i "$REPO/base.pp")
+	local m
+	for m in $(store_tree_modules); do
+		[ "$m" = base ] && continue
+		STORE_SEMODULE_ARGS+=(-i "$REPO/$m.pp")
+	done
+	local i_count tree_count
+	i_count="$(printf '%s\n' "${STORE_SEMODULE_ARGS[@]}" | grep -c '^-i$')"
+	tree_count="$(store_tree_modules | wc -l)"
+	[ "$i_count" -eq "$tree_count" ] || die "argv has $i_count -i flags, expected $tree_count (base + tree modules) -- refusing to install a mismatched set."
+	info "install argv built: $i_count -i, 0 -r (steady state, no foreign modules)"
+}
+
+cmd_store_install() {
+	# --dry-run: run the build + scratch dry-run + gate, print the verdict,
+	# never touch the real store. Same reasoning as store-sync-finalize's
+	# --dry-run (2026-09-27 incident) -- give this an observe-only path from
+	# day one instead of retrofitting one after the same mistake recurs.
+	local dry_run=0
+	case "${1:-}" in
+		--dry-run) dry_run=1; shift ;;
+		"") ;;
+		*) die "store-install: unrecognized argument '$1' -- the only accepted flag is --dry-run" ;;
+	esac
+
+	[ "$(id -u)" -eq 0 ] && die "run this as your normal user (with sudo available), not as root."
+	[ -f "$STORE_MARKER" ] || die "store-install is the post-sync modular path -- $STORE_MARKER doesn't exist yet. Run store-sync-apply first (or store-sync-finalize if the store is already synced but the marker wasn't written)."
+	command -v flock >/dev/null || die "flock not found"
+	mkdir -p "$STATE_DIR"
+	exec 9>"$STORE_LOCK_FILE"
+	flock -n 9 || die "another store-sync-apply/finalize/install (or something holding $STORE_LOCK_FILE) is already running."
+
+	info "=== 1/4: modular build ==="
+	store_build_modular
+
+	info "=== 2/4: build install argv (asserts zero foreign modules) ==="
+	store_install_argv
+
+	info "=== 3/4: scratch dry run (no live effect) ==="
+	store_dry_run
+
+	info "=== 4/4: gate against the running policy ==="
+	local scratch_policy="$STORE_SCRATCH_DIR/etc/selinux/${POLICY_NAME}/policy/policy.35"
+	local scratch_fc="$STORE_SCRATCH_DIR/etc/selinux/${POLICY_NAME}/contexts/files/file_contexts"
+	local scratch_homedir="$STORE_SCRATCH_DIR/etc/selinux/${POLICY_NAME}/contexts/files/homedir_template"
+	sudo test -f "$scratch_policy" || die "scratch dry run did not produce $scratch_policy -- something about the scratch layout has changed, investigate before trusting this gate."
+
+	local gate_out verdict reasons=()
+	gate_out="$(sudo python3 "$REPO/tools/gate_check.py" "$RUNNING_POLICY" "$scratch_policy")"
+	verdict="$(head -1 <<< "$gate_out")"
+	if [ "$verdict" != "ADDITIVE" ]; then
+		while IFS= read -r line; do
+			[[ "$line" == reason:* ]] && reasons+=("${line#reason: }")
+		done <<< "$gate_out"
+		[ "${#reasons[@]}" -eq 0 ] && reasons+=("gate_check.py verdict: $verdict (no reason: lines parsed)")
+	fi
+
+	local fc_diff="" home_diff=""
+	if sudo test -f "$scratch_fc" && [ -f "$INSTALLED_FC" ]; then
+		fc_diff="$(sudo diff -u "$INSTALLED_FC" "$scratch_fc" || true)"
+	fi
+	if sudo test -f "$scratch_homedir" && [ -f "$INSTALLED_HOMEDIR" ]; then
+		home_diff="$(sudo diff -u "$INSTALLED_HOMEDIR" "$scratch_homedir" || true)"
+	fi
+	[ -n "$fc_diff" ] && reasons+=("file_contexts differs from installed")
+	[ -n "$home_diff" ] && reasons+=("homedir_template differs from installed")
+
+	local final_verdict="ADDITIVE"
+	[ "${#reasons[@]}" -gt 0 ] && final_verdict="NON-ADDITIVE"
+	local scratch_policy_sha running_sha
+	scratch_policy_sha="$(sudo sha256sum "$scratch_policy" | cut -d' ' -f1)"
+	running_sha="$(sha256_of "$RUNNING_POLICY")"
+
+	# Same format store-sync's old cmd_gate wrote -- the S7 hook's
+	# gate_says_additive_and_current() reads this file by format only, so
+	# writing a compatible stamp here means load_policy Just Works through
+	# the existing hook, unchanged, once this actually installs for real.
+	{
+		echo "verdict=$final_verdict"
+		echo "policy_sha256=$scratch_policy_sha"
+		echo "running_sha256=$running_sha"
+		echo "checked_at=$(date -Iseconds)"
+		echo "head=$(git -C "$REPO" rev-parse HEAD)"
+		for r in "${reasons[@]}"; do echo "reason=$r"; done
+	} > "$GATE_STAMP"
+
+	echo "$gate_out"
+	[ -n "$fc_diff" ] && { echo "--- file_contexts diff (installed vs scratch) ---"; echo "$fc_diff"; }
+	[ -n "$home_diff" ] && { echo "--- homedir_template diff (installed vs scratch) ---"; echo "$home_diff"; }
+	echo
+	if [ "$final_verdict" = "ADDITIVE" ]; then
+		info "VERDICT: ADDITIVE"
+	else
+		info "VERDICT: NON-ADDITIVE -- installing still lands it at next boot, but 'sudo load_policy' will be refused by the hook while Enforcing. Reasons:"
+		for r in "${reasons[@]}"; do echo "  - $r"; done
+	fi
+
+	if [ "$dry_run" -eq 1 ]; then
+		info "--dry-run: stopping here. Nothing installed, nothing touched in the real store."
+		return 0
+	fi
+
+	info "=== installing into the real store (semodule -N, no reload) ==="
+	local pre_commit post_commit
+	pre_commit="$(store_commit_num)"
+	sudo semodule "${STORE_SEMODULE_ARGS[@]}" -N \
+		|| die "REAL semodule commit FAILED or partially applied -- the store may be in a mixed state. Do not guess; use the RESTORE runbook from the last good backup, then re-verify getenforce/commit_num before doing anything else."
+	post_commit="$(store_commit_num)"
+	[ "$post_commit" -eq "$((pre_commit + 1))" ] || die "commit_num went $pre_commit -> $post_commit, expected exactly +1 -- something else committed to the store concurrently. Investigate before trusting this install or the gate stamp above."
+
+	info "installed OK (store commit_num $pre_commit -> $post_commit). NOT loaded -- verdict is $final_verdict."
+	if [ "$final_verdict" = "ADDITIVE" ]; then
+		info "'sudo load_policy' will be allowed live by the S7 hook (gate stamp matches). Or leave it for next boot."
+	else
+		info "'sudo load_policy' will be refused live by the S7 hook (NON-ADDITIVE) -- setenforce 0 first if a live load is genuinely needed, or leave it for next boot."
+	fi
+}
+
 cmd_build() {
 	cd "$REPO"
 
@@ -1608,8 +1740,9 @@ case "${1:-}" in
 	store-sync-dryrun) shift; cmd_store_sync_dryrun "$@" ;;
 	store-sync-apply) shift; cmd_store_sync_apply "$@" ;;
 	store-sync-finalize) shift; cmd_store_sync_finalize "$@" ;;
+	store-install) shift; cmd_store_install "$@" ;;
 	*)
-		echo "usage: policy-cycle.sh {build|gate|install|load|verify <sesearch-args>|verify-bool <name>|commit|store-sync-plan|store-sync-dryrun|store-sync-apply|store-sync-finalize [--dry-run]}"
+		echo "usage: policy-cycle.sh {build|gate|install|load|verify <sesearch-args>|verify-bool <name>|commit|store-sync-plan|store-sync-dryrun|store-sync-apply|store-sync-finalize [--dry-run]|store-install [--dry-run]}"
 		exit 1
 		;;
 esac
