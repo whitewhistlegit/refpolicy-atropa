@@ -2209,21 +2209,6 @@ optional_policy(`
 	allow systemd_tmpfiles_t auditd_etc_t:dir search;
 ')
 
-# Q4 (2026-09-27/28): tmpfiles.d Z/z lines fix ownership and mode on
-# /var/log/audit/*. auditd_log_t already has dir-level create/relabel here
-# but nothing exists yet for the file class. Deliberately narrow -- no read
-# write create or unlink -- auditd_log_t is excluded from the generic
-# systemd_tmpfiles_manage_all boolean bundle on purpose (not tagged
-# non_security_file_type) and this keeps that boundary: label and ownership
-# fixups only -- never audit log content.
-optional_policy(`
-	gen_require(`
-		type auditd_log_t;
-	')
-
-	allow systemd_tmpfiles_t auditd_log_t:file { getattr relabelfrom relabelto setattr };
-')
-
 kernel_getattr_proc(systemd_tmpfiles_t)
 kernel_read_kernel_sysctls(systemd_tmpfiles_t)
 kernel_read_network_state(systemd_tmpfiles_t)
