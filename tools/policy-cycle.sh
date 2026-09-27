@@ -752,11 +752,75 @@ store_install_argv() {
 	info "install argv built: $i_count -i, 0 -r (steady state, no foreign modules)"
 }
 
+# Shared by store-install's preview (scratch vs running) and real (installed
+# vs running) gate checks -- Opus's review (2026-09-27) found the two-copy
+# version had drifted on failure handling, so this is the one place both
+# call. Sets GATE_RAW_OUT/GATE_FINAL_VERDICT/GATE_REASONS (array). Always
+# reads through sudo: harmless for world-readable real files, required for
+# root-owned scratch ones, so one code path covers both callers.
+#
+# F4: gate_check.py itself failing (sediff crash/OOM) must not look like a
+# silent NON-ADDITIVE verdict -- die with the output instead.
+# F5: a missing fc/homedir file on either side is itself a difference, not
+# something to skip past (the old code silently passed if the scratch file
+# happened to be absent).
+run_gate_check() {
+	local base_policy="$1" cand_policy="$2" base_fc="$3" cand_fc="$4" base_homedir="$5" cand_homedir="$6"
+	GATE_RAW_OUT="$(sudo python3 "$REPO/tools/gate_check.py" "$base_policy" "$cand_policy" 2>&1)" \
+		|| die "gate_check.py itself failed comparing $base_policy vs $cand_policy -- this is NOT a verdict, nothing installed/gated further. Output:
+$GATE_RAW_OUT"
+
+	local verdict=; verdict="$(head -1 <<< "$GATE_RAW_OUT")"
+	GATE_REASONS=()
+	if [ "$verdict" != "ADDITIVE" ]; then
+		local line
+		while IFS= read -r line; do
+			[[ "$line" == reason:* ]] && GATE_REASONS+=("${line#reason: }")
+		done <<< "$GATE_RAW_OUT"
+		[ "${#GATE_REASONS[@]}" -eq 0 ] && GATE_REASONS+=("gate_check.py verdict: $verdict (no reason: lines parsed)")
+	fi
+
+	local fc_diff="" home_diff=""
+	if sudo test -f "$base_fc" && sudo test -f "$cand_fc"; then
+		fc_diff="$(sudo diff -u "$base_fc" "$cand_fc" || true)"
+		[ -n "$fc_diff" ] && GATE_REASONS+=("file_contexts differs")
+	else
+		GATE_REASONS+=("file_contexts missing on one side ($base_fc / $cand_fc) -- treating as changed")
+	fi
+	if sudo test -f "$base_homedir" && sudo test -f "$cand_homedir"; then
+		home_diff="$(sudo diff -u "$base_homedir" "$cand_homedir" || true)"
+		[ -n "$home_diff" ] && GATE_REASONS+=("homedir_template differs")
+	else
+		GATE_REASONS+=("homedir_template missing on one side ($base_homedir / $cand_homedir) -- treating as changed")
+	fi
+	GATE_FC_DIFF="$fc_diff"
+	GATE_HOME_DIFF="$home_diff"
+
+	GATE_FINAL_VERDICT="ADDITIVE"
+	[ "${#GATE_REASONS[@]}" -gt 0 ] && GATE_FINAL_VERDICT="NON-ADDITIVE"
+	return 0
+}
+
+print_gate_result() {
+	local label="$1"
+	echo "$GATE_RAW_OUT"
+	[ -n "$GATE_FC_DIFF" ] && { echo "--- file_contexts diff ($label) ---"; echo "$GATE_FC_DIFF"; }
+	[ -n "$GATE_HOME_DIFF" ] && { echo "--- homedir_template diff ($label) ---"; echo "$GATE_HOME_DIFF"; }
+	echo
+	if [ "$GATE_FINAL_VERDICT" = "ADDITIVE" ]; then
+		info "VERDICT ($label): ADDITIVE"
+	else
+		info "VERDICT ($label): NON-ADDITIVE. Reasons:"
+		local r
+		for r in "${GATE_REASONS[@]}"; do echo "  - $r"; done
+	fi
+}
+
 cmd_store_install() {
-	# --dry-run: run the build + scratch dry-run + gate, print the verdict,
-	# never touch the real store. Same reasoning as store-sync-finalize's
-	# --dry-run (2026-09-27 incident) -- give this an observe-only path from
-	# day one instead of retrofitting one after the same mistake recurs.
+	# --dry-run: run the build + scratch dry-run + a PREVIEW gate, print the
+	# verdict, never touch the real store and never write $GATE_STAMP (F1 --
+	# a stamp from a run that installed nothing doesn't mean anything to the
+	# S7 hook, which reads $GATE_STAMP against the REAL installed policy).
 	local dry_run=0
 	case "${1:-}" in
 		--dry-run) dry_run=1; shift ;;
@@ -771,6 +835,10 @@ cmd_store_install() {
 	exec 9>"$STORE_LOCK_FILE"
 	flock -n 9 || die "another store-sync-apply/finalize/install (or something holding $STORE_LOCK_FILE) is already running."
 
+	# F2: a mid-run die must not leave a stale stamp for the S7 hook to trust
+	# later -- same invariant cmd_gate kept.
+	rm -f "$GATE_STAMP"
+
 	info "=== 1/4: modular build ==="
 	store_build_modular
 
@@ -778,80 +846,74 @@ cmd_store_install() {
 	store_install_argv
 
 	info "=== 3/4: scratch dry run (no live effect) ==="
+	local pre_dryrun_commit
+	pre_dryrun_commit="$(store_commit_num)"
 	store_dry_run
 
-	info "=== 4/4: gate against the running policy ==="
+	info "=== 4/4: preview gate -- scratch vs running, informational only, no stamp written ==="
 	local scratch_policy="$STORE_SCRATCH_DIR/etc/selinux/${POLICY_NAME}/policy/policy.35"
 	local scratch_fc="$STORE_SCRATCH_DIR/etc/selinux/${POLICY_NAME}/contexts/files/file_contexts"
 	local scratch_homedir="$STORE_SCRATCH_DIR/etc/selinux/${POLICY_NAME}/contexts/files/homedir_template"
-	sudo test -f "$scratch_policy" || die "scratch dry run did not produce $scratch_policy -- something about the scratch layout has changed, investigate before trusting this gate."
-
-	local gate_out verdict reasons=()
-	gate_out="$(sudo python3 "$REPO/tools/gate_check.py" "$RUNNING_POLICY" "$scratch_policy")"
-	verdict="$(head -1 <<< "$gate_out")"
-	if [ "$verdict" != "ADDITIVE" ]; then
-		while IFS= read -r line; do
-			[[ "$line" == reason:* ]] && reasons+=("${line#reason: }")
-		done <<< "$gate_out"
-		[ "${#reasons[@]}" -eq 0 ] && reasons+=("gate_check.py verdict: $verdict (no reason: lines parsed)")
-	fi
-
-	local fc_diff="" home_diff=""
-	if sudo test -f "$scratch_fc" && [ -f "$INSTALLED_FC" ]; then
-		fc_diff="$(sudo diff -u "$INSTALLED_FC" "$scratch_fc" || true)"
-	fi
-	if sudo test -f "$scratch_homedir" && [ -f "$INSTALLED_HOMEDIR" ]; then
-		home_diff="$(sudo diff -u "$INSTALLED_HOMEDIR" "$scratch_homedir" || true)"
-	fi
-	[ -n "$fc_diff" ] && reasons+=("file_contexts differs from installed")
-	[ -n "$home_diff" ] && reasons+=("homedir_template differs from installed")
-
-	local final_verdict="ADDITIVE"
-	[ "${#reasons[@]}" -gt 0 ] && final_verdict="NON-ADDITIVE"
-	local scratch_policy_sha running_sha
-	scratch_policy_sha="$(sudo sha256sum "$scratch_policy" | cut -d' ' -f1)"
-	running_sha="$(sha256_of "$RUNNING_POLICY")"
-
-	# Same format store-sync's old cmd_gate wrote -- the S7 hook's
-	# gate_says_additive_and_current() reads this file by format only, so
-	# writing a compatible stamp here means load_policy Just Works through
-	# the existing hook, unchanged, once this actually installs for real.
-	{
-		echo "verdict=$final_verdict"
-		echo "policy_sha256=$scratch_policy_sha"
-		echo "running_sha256=$running_sha"
-		echo "checked_at=$(date -Iseconds)"
-		echo "head=$(git -C "$REPO" rev-parse HEAD)"
-		for r in "${reasons[@]}"; do echo "reason=$r"; done
-	} > "$GATE_STAMP"
-
-	echo "$gate_out"
-	[ -n "$fc_diff" ] && { echo "--- file_contexts diff (installed vs scratch) ---"; echo "$fc_diff"; }
-	[ -n "$home_diff" ] && { echo "--- homedir_template diff (installed vs scratch) ---"; echo "$home_diff"; }
-	echo
-	if [ "$final_verdict" = "ADDITIVE" ]; then
-		info "VERDICT: ADDITIVE"
-	else
-		info "VERDICT: NON-ADDITIVE -- installing still lands it at next boot, but 'sudo load_policy' will be refused by the hook while Enforcing. Reasons:"
-		for r in "${reasons[@]}"; do echo "  - $r"; done
-	fi
+	sudo test -f "$scratch_policy" || die "scratch dry run did not produce $scratch_policy -- something about the scratch layout has changed, investigate before trusting this preview."
+	run_gate_check "$RUNNING_POLICY" "$scratch_policy" "$INSTALLED_FC" "$scratch_fc" "$INSTALLED_HOMEDIR" "$scratch_homedir"
+	print_gate_result "preview: scratch vs running"
 
 	if [ "$dry_run" -eq 1 ]; then
-		info "--dry-run: stopping here. Nothing installed, nothing touched in the real store."
+		info "--dry-run: stopping here. Nothing installed, no stamp written -- this preview does not authorize a live load_policy."
 		return 0
 	fi
 
-	info "=== installing into the real store (semodule -N, no reload) ==="
-	local pre_commit post_commit
-	pre_commit="$(store_commit_num)"
-	sudo semodule "${STORE_SEMODULE_ARGS[@]}" -N \
-		|| die "REAL semodule commit FAILED or partially applied -- the store may be in a mixed state. Do not guess; use the RESTORE runbook from the last good backup, then re-verify getenforce/commit_num before doing anything else."
-	post_commit="$(store_commit_num)"
-	[ "$post_commit" -eq "$((pre_commit + 1))" ] || die "commit_num went $pre_commit -> $post_commit, expected exactly +1 -- something else committed to the store concurrently. Investigate before trusting this install or the gate stamp above."
+	# F3: the gate/preview above (and the sediff inside gate_check.py) can
+	# take a while; re-verify nothing moved underneath us right before
+	# actually firing, the same discipline store_real_run uses for the
+	# one-time sync (manifest sha + a fresh state check), since flock only
+	# protects against another instance of this script, not e.g. someone
+	# running semodule/setsebool -P by hand in another shell.
+	info "=== re-verifying nothing changed since the dry run ==="
+	store_check_manifest || die "manifest changed since build/dry-run -- a .pp file was modified underneath us. Refusing to install. Re-run from scratch."
+	local current_commit
+	current_commit="$(store_commit_num)"
+	[ "$current_commit" -eq "$pre_dryrun_commit" ] || die "store commit_num changed ($pre_dryrun_commit -> $current_commit) since the dry run -- something else committed to the store outside this script. Refusing to install. Re-run from scratch."
 
-	info "installed OK (store commit_num $pre_commit -> $post_commit). NOT loaded -- verdict is $final_verdict."
-	if [ "$final_verdict" = "ADDITIVE" ]; then
-		info "'sudo load_policy' will be allowed live by the S7 hook (gate stamp matches). Or leave it for next boot."
+	info "=== installing into the real store (semodule -N, no reload) ==="
+	local pre_fc pre_homedir
+	pre_fc="$(mktemp "$STATE_DIR/pre-fc.XXXXXX")"
+	pre_homedir="$(mktemp "$STATE_DIR/pre-homedir.XXXXXX")"
+	[ -f "$INSTALLED_FC" ] && cp "$INSTALLED_FC" "$pre_fc"
+	[ -f "$INSTALLED_HOMEDIR" ] && cp "$INSTALLED_HOMEDIR" "$pre_homedir"
+
+	local pre_commit post_commit
+	pre_commit="$current_commit"
+	sudo semodule "${STORE_SEMODULE_ARGS[@]}" -N \
+		|| { rm -f "$pre_fc" "$pre_homedir"; die "REAL semodule commit FAILED or partially applied -- the store may be in a mixed state. Do not guess; use the RESTORE runbook from the last good backup, then re-verify getenforce/commit_num before doing anything else."; }
+	post_commit="$(store_commit_num)"
+	[ "$post_commit" -eq "$((pre_commit + 1))" ] || { rm -f "$pre_fc" "$pre_homedir"; die "commit_num went $pre_commit -> $post_commit, expected exactly +1 -- something else committed to the store concurrently. Investigate before trusting this install."; }
+
+	# F1: gate the REAL installed result, not the scratch preview -- the S7
+	# hook's gate_says_additive_and_current() checks policy_sha256 against
+	# $INSTALLED_POLICY specifically, so the stamp has to be built from that
+	# file after it actually changed, not from a scratch copy that may not
+	# be byte-identical to what libsemanage just wrote for real.
+	info "=== gating the real installed result ==="
+	run_gate_check "$RUNNING_POLICY" "$INSTALLED_POLICY" "$pre_fc" "$INSTALLED_FC" "$pre_homedir" "$INSTALLED_HOMEDIR"
+	print_gate_result "real: installed vs running"
+	rm -f "$pre_fc" "$pre_homedir"
+
+	local installed_sha running_sha
+	installed_sha="$(sha256_of "$INSTALLED_POLICY")"
+	running_sha="$(sha256_of "$RUNNING_POLICY")"
+	{
+		echo "verdict=$GATE_FINAL_VERDICT"
+		echo "policy_sha256=$installed_sha"
+		echo "running_sha256=$running_sha"
+		echo "checked_at=$(date -Iseconds)"
+		echo "head=$(git -C "$REPO" rev-parse HEAD)"
+		local r; for r in "${GATE_REASONS[@]}"; do echo "reason=$r"; done
+	} > "$GATE_STAMP"
+
+	info "installed OK (store commit_num $pre_commit -> $post_commit). NOT loaded -- verdict is $GATE_FINAL_VERDICT."
+	if [ "$GATE_FINAL_VERDICT" = "ADDITIVE" ]; then
+		info "'sudo load_policy' will be allowed live by the S7 hook (gate stamp matches the now-installed policy). Or leave it for next boot."
 	else
 		info "'sudo load_policy' will be refused live by the S7 hook (NON-ADDITIVE) -- setenforce 0 first if a live load is genuinely needed, or leave it for next boot."
 	fi
