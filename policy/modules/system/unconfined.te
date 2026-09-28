@@ -291,6 +291,21 @@ optional_policy(`
 	unconfined_dbus_chat(unconfined_execmem_t)
 ')
 
+# Q5 (2026-09-28): the real owners of the sensitive session-bus names
+# (kwalletd6 ksecretd ksecretprompter xdg-desktop-portal plasmashell
+# kwin_wayland at-spi-bus-launcher) all run as unconfined_t on this desktop
+# -- without this they would lose the ability to claim their own names once
+# those names are associated with sensitive_session_bus_t via
+# contexts/dbus_contexts. brave_t deliberately does not get this grant.
+optional_policy(`
+	gen_require(`
+		type sensitive_session_bus_t;
+		class dbus acquire_svc;
+	')
+
+	allow unconfined_t sensitive_session_bus_t:dbus acquire_svc;
+')
+
 ########################################
 #
 # Unconfined seuser

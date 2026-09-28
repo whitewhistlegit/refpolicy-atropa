@@ -115,6 +115,15 @@ xdg_config_content(brave_widevine_t)
 type brave_xdg_cache_t;
 xdg_cache_content(brave_xdg_cache_t)
 
+# Q5 (2026-09-28): a D-Bus session-bus name associated with this type (via
+# an exact-match <associate> entry in contexts/dbus_contexts) cannot be
+# claimed by brave_t even though brave_t gets broad acquire_svc against
+# unconfined_t below for everything else -- see the dbus optional_policy
+# block further down. Named generically since the same deny-list pattern
+# would apply to any future confined app on this desktop, not just Brave.
+type sensitive_session_bus_t;
+role system_r types sensitive_session_bus_t;
+
 ########################################
 #
 # brave local policy
@@ -347,6 +356,12 @@ optional_policy(`
 
 	optional_policy(`
 		unconfined_dbus_chat(brave_t)
+		# Q5 (2026-09-28): lets brave claim its own per-instance session-bus
+		# names (MPRIS instanceNNN etc) since those are unassociated and
+		# therefore default to unconfined_t. Sensitive names are associated
+		# with sensitive_session_bus_t instead (see the type declaration
+		# above) which brave_t deliberately does not get acquire_svc on.
+		unconfined_dbus_connect(brave_t)
 	')
 
 	optional_policy(`

@@ -2,5 +2,37 @@
  "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
 <busconfig>
   <selinux>
+    <!-- Q5 (2026-09-28): exact-match session-bus name deny-list against
+         confined apps (Brave). <associate own> is exact match only, no
+         wildcards, so every name below must be listed individually. Any
+         domain without an explicit acquire_svc grant on
+         sensitive_session_bus_t (see policy/modules/apps/brave.te and
+         policy/modules/system/unconfined.te) is refused RequestName on
+         these names even though it may be able to claim other names via
+         the default unconfined_t association. -->
+
+    <!-- secrets -->
+    <associate own="org.freedesktop.secrets" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.kde.kwalletd" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.kde.kwalletd5" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.kde.kwalletd6" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.kde.ksecretd" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.kde.secretservicecompat" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.kde.secretprompter" context="system_u:system_r:sensitive_session_bus_t:s0" />
+
+    <!-- portals -->
+    <associate own="org.freedesktop.portal.Desktop" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.freedesktop.portal.Documents" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.freedesktop.impl.portal.PermissionStore" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.freedesktop.impl.portal.desktop.gtk" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.freedesktop.impl.portal.desktop.kde" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.freedesktop.impl.portal.desktop.kwallet" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.freedesktop.impl.portal.desktop.plasmanotify" context="system_u:system_r:sensitive_session_bus_t:s0" />
+
+    <!-- desktop and input -->
+    <associate own="org.a11y.Bus" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.freedesktop.a11y.Manager" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.kde.kglobalaccel" context="system_u:system_r:sensitive_session_bus_t:s0" />
+    <associate own="org.freedesktop.Notifications" context="system_u:system_r:sensitive_session_bus_t:s0" />
   </selinux>
 </busconfig>
