@@ -122,7 +122,6 @@ xdg_cache_content(brave_xdg_cache_t)
 # block further down. Named generically since the same deny-list pattern
 # would apply to any future confined app on this desktop, not just Brave.
 type sensitive_session_bus_t;
-role system_r types sensitive_session_bus_t;
 
 ########################################
 #
