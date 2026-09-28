@@ -12,27 +12,27 @@
          the default unconfined_t association. -->
 
     <!-- secrets -->
-    <associate own="org.freedesktop.secrets" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.kde.kwalletd" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.kde.kwalletd5" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.kde.kwalletd6" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.kde.ksecretd" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.kde.secretservicecompat" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.kde.secretprompter" context="system_u:object_r:sensitive_session_bus_t:s0" />
+    <associate own="org.freedesktop.secrets" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.kde.kwalletd" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.kde.kwalletd5" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.kde.kwalletd6" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.kde.ksecretd" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.kde.secretservicecompat" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.kde.secretprompter" context="system_u:object_r:sensitive_session_bus_t" />
 
     <!-- portals -->
-    <associate own="org.freedesktop.portal.Desktop" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.freedesktop.portal.Documents" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.freedesktop.impl.portal.PermissionStore" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.freedesktop.impl.portal.desktop.gtk" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.freedesktop.impl.portal.desktop.kde" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.freedesktop.impl.portal.desktop.kwallet" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.freedesktop.impl.portal.desktop.plasmanotify" context="system_u:object_r:sensitive_session_bus_t:s0" />
+    <associate own="org.freedesktop.portal.Desktop" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.freedesktop.portal.Documents" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.freedesktop.impl.portal.PermissionStore" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.freedesktop.impl.portal.desktop.gtk" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.freedesktop.impl.portal.desktop.kde" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.freedesktop.impl.portal.desktop.kwallet" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.freedesktop.impl.portal.desktop.plasmanotify" context="system_u:object_r:sensitive_session_bus_t" />
 
     <!-- desktop and input -->
-    <associate own="org.a11y.Bus" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.freedesktop.a11y.Manager" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.kde.kglobalaccel" context="system_u:object_r:sensitive_session_bus_t:s0" />
-    <associate own="org.freedesktop.Notifications" context="system_u:object_r:sensitive_session_bus_t:s0" />
+    <associate own="org.a11y.Bus" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.freedesktop.a11y.Manager" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.kde.kglobalaccel" context="system_u:object_r:sensitive_session_bus_t" />
+    <associate own="org.freedesktop.Notifications" context="system_u:object_r:sensitive_session_bus_t" />
   </selinux>
 </busconfig>
