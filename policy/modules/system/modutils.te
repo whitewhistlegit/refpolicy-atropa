@@ -147,6 +147,21 @@ optional_policy(`
 	apt_use_ptys(kmod_t)
 ')
 
+gen_require(`
+	type user_tmp_t;
+')
+
+# mkinitcpio builds its image root under /tmp as user_tmp_t and then runs
+# depmod there as kmod_t. Without these rules depmod cannot even search the
+# build root and the initramfs ships with no module index. Only the
+# permissions seen denied in a permissive scratch build are granted plus
+# file write. File write never shows in the audit log because the rule
+# dontaudit systemprocess user_tmp_t:file write hides it so do not trim it.
+# There is deliberately no setattr or link or rmdir or unlink here.
+allow kmod_t user_tmp_t:dir { getattr search read open write add_name remove_name };
+allow kmod_t user_tmp_t:file { create open read write getattr map rename };
+allow kmod_t user_tmp_t:lnk_file { read getattr };
+
 optional_policy(`
 	firstboot_dontaudit_rw_pipes(kmod_t)
 	firstboot_dontaudit_rw_stream_sockets(kmod_t)
