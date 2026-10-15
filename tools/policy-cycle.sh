@@ -748,6 +748,8 @@ If this looks like a memory error (MemoryError / cannot allocate memory), close 
 # a store that's drifted back to having foreign modules is exactly the
 # R-store regression TEAM.md warns about, and this is the first place that
 # would notice it.
+store_argv_sha() { printf '%s\0' "${STORE_SEMODULE_ARGS[@]}" | sha256sum | cut -d' ' -f1; }
+
 store_install_argv() {
 	# $1 = 1 when --retire-obsolete was given. Built ONCE per run; the dry
 	# run and the real run both use this exact array (B3/S3 discipline: a
@@ -763,11 +765,14 @@ store_install_argv() {
 	done
 	local i_count tree_count r_count=0
 	i_count="$(printf '%s\n' "${STORE_SEMODULE_ARGS[@]}" | grep -c '^-i$')"
-	tree_count="$(store_tree_modules | wc -l)"
+	local tree_mods
+	tree_mods="$(store_tree_modules)"
+	tree_count="$(wc -l <<< "$tree_mods")"
 	[ "$i_count" -eq "$tree_count" ] || die "argv has $i_count -i flags, expected $tree_count (base + tree modules) -- refusing to install a mismatched set."
 
 	if [ -z "$foreign" ]; then
 		[ "$retire" -eq 0 ] || info "--retire-obsolete: no foreign modules present, nothing to retire (no-op)"
+		STORE_SEMODULE_ARGS_SHA="$(store_argv_sha)"
 		info "install argv built: $i_count -i, 0 -r (steady state, no foreign modules)"
 		return 0
 	fi
@@ -782,12 +787,12 @@ store_install_argv() {
 	fi
 	[ "$tree_count" -eq "$STORE_RETIRE_EXPECT_TREE_COUNT" ] || die "--retire-obsolete: tree has $tree_count modules, expected $STORE_RETIRE_EXPECT_TREE_COUNT (modules.conf is not the post-merge one) -- refusing."
 	for m in "${STORE_RETIRED_MODULES[@]}"; do
-		store_tree_modules | grep -qx "$m" && die "--retire-obsolete: $m is both retired and still in modules.conf -- refusing."
+		if grep -qx "$m" <<< "$tree_mods"; then die "--retire-obsolete: $m is both retired and still in modules.conf -- refusing."; fi
 		STORE_SEMODULE_ARGS+=(-r "$m")
 	done
 	r_count="$(printf '%s\n' "${STORE_SEMODULE_ARGS[@]}" | grep -c '^-r$')"
 	[ "$r_count" -eq "${#STORE_RETIRED_MODULES[@]}" ] || die "argv has $r_count -r flags, expected ${#STORE_RETIRED_MODULES[@]} -- refusing."
-	STORE_SEMODULE_ARGS_SHA="$(printf '%s\0' "${STORE_SEMODULE_ARGS[@]}" | sha256sum | cut -d' ' -f1)"
+	STORE_SEMODULE_ARGS_SHA="$(store_argv_sha)"
 	info "install argv built: $i_count -i, $r_count -r (retiring the obsolete upstream modules, sha256 $STORE_SEMODULE_ARGS_SHA)"
 }
 
@@ -974,6 +979,9 @@ cmd_store_install() {
 	current_commit="$(store_commit_num)"
 	[ "$current_commit" -eq "$pre_dryrun_commit" ] || die "store commit_num changed ($pre_dryrun_commit -> $current_commit) since the dry run -- something else committed to the store outside this script. Refusing to install. Re-run from scratch."
 
+	# The argv is built once and must be byte-for-byte what the dry run used.
+	[ "$(store_argv_sha)" = "$STORE_SEMODULE_ARGS_SHA" ] \
+		|| die "install argv changed between the dry run and the real run -- refusing. Re-run from scratch."
 	if [ "$retire" -eq 1 ]; then
 		# Same drift guard store_real_run uses: the foreign set must still be
 		# exactly what the argv was built against.
