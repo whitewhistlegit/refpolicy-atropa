@@ -70,6 +70,20 @@ STORE_LEGACY_MODULES=(
 	polkit-agent-he polkit-kde-auth polkitd requiredmod sddm-helper
 	sedispatch semodule setsebool startplasma-x11 systemctl udevuevent
 )
+# The 22 modules upstream refpolicy dropped between 5f2f7ac8d and dc9dd62ec
+# (2026-10 merge). Once that merge is installed they are installed in the
+# store but no longer in modules.conf, i.e. foreign, and store-install
+# refuses foreign modules. `store-install --retire-obsolete` removes exactly
+# this set in the same single semodule transaction as the new install, and
+# only if the live foreign set equals this list exactly. After that one
+# transaction the foreign set is empty again and this list can be deleted.
+STORE_RETIRED_MODULES=(
+	aisexec hddtemp i18n_input openct pads portmap prelink pxe qpid quantum
+	remotelogin rlogin rshd rssh slpd telnet transproxy tzdata usbmodules
+	wdmd xfs zarafa
+)
+# base + 406 modules: what the tree must install when the retirement runs.
+STORE_RETIRE_EXPECT_TREE_COUNT=407
 # booleans.local's current 8 true booleans (preserve) + 2 known
 # tonight-only additions the store doesn't have yet: user_execmod_tmpfs
 # (fold-now decision) and brave_read_system_info (Brave GPU fix, 555378e
@@ -734,10 +748,14 @@ If this looks like a memory error (MemoryError / cannot allocate memory), close 
 # a store that's drifted back to having foreign modules is exactly the
 # R-store regression TEAM.md warns about, and this is the first place that
 # would notice it.
+store_argv_sha() { printf '%s\0' "${STORE_SEMODULE_ARGS[@]}" | sha256sum | cut -d' ' -f1; }
+
 store_install_argv() {
-	local foreign
+	# $1 = 1 when --retire-obsolete was given. Built ONCE per run; the dry
+	# run and the real run both use this exact array (B3/S3 discipline: a
+	# transient `semodule -l` failure must never silently shrink the -r list).
+	local retire="${1:-0}" foreign
 	foreign="$(store_foreign_modules)"
-	[ -z "$foreign" ] || die "store has foreign modules present ($foreign) -- store-install doesn't know how to remove them safely (that was a one-time migration step, see store_build_argv). Investigate before proceeding: either they're expected and this script needs updating, or the store has regressed (R-store caveat in TEAM.md)."
 
 	STORE_SEMODULE_ARGS=(-s "$POLICY_NAME" -i "$REPO/base.pp")
 	local m
@@ -745,11 +763,92 @@ store_install_argv() {
 		[ "$m" = base ] && continue
 		STORE_SEMODULE_ARGS+=(-i "$REPO/$m.pp")
 	done
-	local i_count tree_count
+	local i_count tree_count r_count=0
 	i_count="$(printf '%s\n' "${STORE_SEMODULE_ARGS[@]}" | grep -c '^-i$')"
-	tree_count="$(store_tree_modules | wc -l)"
+	local tree_mods
+	tree_mods="$(store_tree_modules)"
+	tree_count="$(wc -l <<< "$tree_mods")"
 	[ "$i_count" -eq "$tree_count" ] || die "argv has $i_count -i flags, expected $tree_count (base + tree modules) -- refusing to install a mismatched set."
-	info "install argv built: $i_count -i, 0 -r (steady state, no foreign modules)"
+
+	if [ -z "$foreign" ]; then
+		[ "$retire" -eq 0 ] || info "--retire-obsolete: no foreign modules present, nothing to retire (no-op)"
+		STORE_SEMODULE_ARGS_SHA="$(store_argv_sha)"
+		info "install argv built: $i_count -i, 0 -r (steady state, no foreign modules)"
+		return 0
+	fi
+
+	[ "$retire" -eq 1 ] || die "store has foreign modules present ($(echo $foreign)) -- store-install does not remove modules unless asked. If this is the one-time retirement of the obsolete upstream modules, re-run with --retire-obsolete. Otherwise the store has regressed (R-store caveat in TEAM.md): investigate before proceeding."
+
+	local foreign_sorted retired_sorted
+	foreign_sorted="$(printf '%s\n' $foreign | sort -u)"
+	retired_sorted="$(printf '%s\n' "${STORE_RETIRED_MODULES[@]}" | sort -u)"
+	if [ "$foreign_sorted" != "$retired_sorted" ]; then
+		die "--retire-obsolete: the live foreign module set is not exactly STORE_RETIRED_MODULES -- refusing to remove anything. Only in foreign: [$(comm -23 <(echo "$foreign_sorted") <(echo "$retired_sorted") | tr '\n' ' ')] only in the retire list: [$(comm -13 <(echo "$foreign_sorted") <(echo "$retired_sorted") | tr '\n' ' ')]"
+	fi
+	[ "$tree_count" -eq "$STORE_RETIRE_EXPECT_TREE_COUNT" ] || die "--retire-obsolete: tree has $tree_count modules, expected $STORE_RETIRE_EXPECT_TREE_COUNT (modules.conf is not the post-merge one) -- refusing."
+	for m in "${STORE_RETIRED_MODULES[@]}"; do
+		if grep -qx "$m" <<< "$tree_mods"; then die "--retire-obsolete: $m is both retired and still in modules.conf -- refusing."; fi
+		STORE_SEMODULE_ARGS+=(-r "$m")
+	done
+	r_count="$(printf '%s\n' "${STORE_SEMODULE_ARGS[@]}" | grep -c '^-r$')"
+	[ "$r_count" -eq "${#STORE_RETIRED_MODULES[@]}" ] || die "argv has $r_count -r flags, expected ${#STORE_RETIRED_MODULES[@]} -- refusing."
+	STORE_SEMODULE_ARGS_SHA="$(store_argv_sha)"
+	info "install argv built: $i_count -i, $r_count -r (retiring the obsolete upstream modules, sha256 $STORE_SEMODULE_ARGS_SHA)"
+}
+
+# /usr/share/selinux/<policy> mirror of the built .pp files. The libsemanage
+# store has its own copy; this directory is the mirror the backup tars and
+# the manifest check compare against, and it went stale after every
+# store-install until this step existed (Q4/Q5/kmod_t rounds). Only files that
+# differ or are missing are replaced, each staged as a dotfile in the same
+# directory, labeled by restorecon, then renamed over the target. Files for
+# STORE_RETIRED_MODULES are removed; any other unexpected .pp is reported and
+# left alone.
+store_usr_share_plan() {
+	STORE_USR_CHANGED=(); STORE_USR_ADDED=(); STORE_USR_REMOVE=(); STORE_USR_UNEXPECTED=()
+	local -A want=()
+	local m f base src dst r is_retired
+	for m in $(store_tree_modules); do
+		want["$m.pp"]=1
+		src="$REPO/$m.pp"; dst="$STORE_USR_DIR/$m.pp"
+		if ! sudo test -f "$dst"; then
+			STORE_USR_ADDED+=("$m.pp")
+		elif ! sudo cmp -s "$src" "$dst"; then
+			STORE_USR_CHANGED+=("$m.pp")
+		fi
+	done
+	while IFS= read -r f; do
+		[ -n "$f" ] || continue
+		base="$(basename "$f")"
+		[ -z "${want[$base]:-}" ] || continue
+		is_retired=0
+		for r in "${STORE_RETIRED_MODULES[@]}"; do [ "$base" = "$r.pp" ] && is_retired=1; done
+		if [ "$is_retired" -eq 1 ]; then STORE_USR_REMOVE+=("$base"); else STORE_USR_UNEXPECTED+=("$base"); fi
+	done < <(sudo find "$STORE_USR_DIR" -maxdepth 1 -type f -name '*.pp' | sort)
+}
+
+store_usr_share_report() {
+	info "/usr/share mirror plan: ${#STORE_USR_CHANGED[@]} changed, ${#STORE_USR_ADDED[@]} added, ${#STORE_USR_REMOVE[@]} retired-to-remove, ${#STORE_USR_UNEXPECTED[@]} unexpected (left alone)"
+}
+
+store_usr_share_refresh() {
+	store_usr_share_plan
+	store_usr_share_report
+	local f tmp
+	for f in "${STORE_USR_CHANGED[@]}" "${STORE_USR_ADDED[@]}"; do
+		tmp="$STORE_USR_DIR/.$f.new"
+		sudo install -m 0644 -o root -g root "$REPO/$f" "$tmp" || die "could not stage $tmp"
+		sudo restorecon "$tmp" || die "restorecon failed on $tmp"
+		sudo mv -f "$tmp" "$STORE_USR_DIR/$f" || die "could not move $tmp into place"
+	done
+	for f in "${STORE_USR_REMOVE[@]}"; do
+		sudo rm -f "$STORE_USR_DIR/$f" || die "could not remove $STORE_USR_DIR/$f"
+	done
+	[ "${#STORE_USR_UNEXPECTED[@]}" -eq 0 ] || info "WARNING: unexpected .pp left in $STORE_USR_DIR: ${STORE_USR_UNEXPECTED[*]}"
+	# The manifest was written by store_build_modular from this run's build.
+	( cd "$STORE_USR_DIR" && sudo sha256sum -c --quiet "$STATE_DIR/store-sync-manifest.sha256" ) \
+		|| die "/usr/share mirror does NOT match the manifest after the refresh -- the store itself was committed, but fix $STORE_USR_DIR before trusting it (re-run store-install, or compare with sha256sum -c)."
+	info "/usr/share mirror refreshed and verified against the manifest ($(wc -l < "$STATE_DIR/store-sync-manifest.sha256") entries)"
 }
 
 # Shared by store-install's preview (scratch vs running) and real (installed
@@ -821,12 +920,14 @@ cmd_store_install() {
 	# verdict, never touch the real store and never write $GATE_STAMP (F1 --
 	# a stamp from a run that installed nothing doesn't mean anything to the
 	# S7 hook, which reads $GATE_STAMP against the REAL installed policy).
-	local dry_run=0
-	case "${1:-}" in
-		--dry-run) dry_run=1; shift ;;
-		"") ;;
-		*) die "store-install: unrecognized argument '$1' -- the only accepted flag is --dry-run" ;;
-	esac
+	local dry_run=0 retire=0
+	while [ $# -gt 0 ]; do
+		case "$1" in
+			--dry-run) dry_run=1; shift ;;
+			--retire-obsolete) retire=1; shift ;;
+			*) die "store-install: unrecognized argument '$1' -- accepted flags: --dry-run, --retire-obsolete" ;;
+		esac
+	done
 
 	[ "$(id -u)" -eq 0 ] && die "run this as your normal user (with sudo available), not as root."
 	[ -f "$STORE_MARKER" ] || die "store-install is the post-sync modular path -- $STORE_MARKER doesn't exist yet. Run store-sync-apply first (or store-sync-finalize if the store is already synced but the marker wasn't written)."
@@ -842,8 +943,8 @@ cmd_store_install() {
 	info "=== 1/4: modular build ==="
 	store_build_modular
 
-	info "=== 2/4: build install argv (asserts zero foreign modules) ==="
-	store_install_argv
+	info "=== 2/4: build install argv (foreign modules: none, or exactly the retired set with --retire-obsolete) ==="
+	store_install_argv "$retire"
 
 	info "=== 3/4: scratch dry run (no live effect) ==="
 	local pre_dryrun_commit
@@ -857,6 +958,9 @@ cmd_store_install() {
 	sudo test -f "$scratch_policy" || die "scratch dry run did not produce $scratch_policy -- something about the scratch layout has changed, investigate before trusting this preview."
 	run_gate_check "$RUNNING_POLICY" "$scratch_policy" "$INSTALLED_FC" "$scratch_fc" "$INSTALLED_HOMEDIR" "$scratch_homedir"
 	print_gate_result "preview: scratch vs running"
+
+	store_usr_share_plan
+	store_usr_share_report
 
 	if [ "$dry_run" -eq 1 ]; then
 		info "--dry-run: stopping here. Nothing installed, no stamp written -- this preview does not authorize a live load_policy."
@@ -875,6 +979,16 @@ cmd_store_install() {
 	current_commit="$(store_commit_num)"
 	[ "$current_commit" -eq "$pre_dryrun_commit" ] || die "store commit_num changed ($pre_dryrun_commit -> $current_commit) since the dry run -- something else committed to the store outside this script. Refusing to install. Re-run from scratch."
 
+	# The argv is built once and must be byte-for-byte what the dry run used.
+	[ "$(store_argv_sha)" = "$STORE_SEMODULE_ARGS_SHA" ] \
+		|| die "install argv changed between the dry run and the real run -- refusing. Re-run from scratch."
+	if [ "$retire" -eq 1 ]; then
+		# Same drift guard store_real_run uses: the foreign set must still be
+		# exactly what the argv was built against.
+		[ "$(store_foreign_modules | sort -u)" = "$(printf '%s\n' "${STORE_RETIRED_MODULES[@]}" | sort -u)" ] \
+			|| die "live foreign-module set drifted since the argv was built -- refusing the real run. Re-run from scratch."
+	fi
+
 	info "=== installing into the real store (semodule -N, no reload) ==="
 	local pre_fc pre_homedir
 	pre_fc="$(mktemp "$STATE_DIR/pre-fc.XXXXXX")"
@@ -889,6 +1003,14 @@ cmd_store_install() {
 	post_commit="$(store_commit_num)"
 	[ "$post_commit" -eq "$((pre_commit + 1))" ] || { rm -f "$pre_fc" "$pre_homedir"; die "commit_num went $pre_commit -> $post_commit, expected exactly +1 -- something else committed to the store concurrently. Investigate before trusting this install."; }
 
+	# Post-conditions on the real store: with --retire-obsolete the foreign
+	# set must now be empty and the module count must equal the tree count.
+	local remaining_foreign installed_count
+	remaining_foreign="$(store_foreign_modules)"
+	[ -z "$remaining_foreign" ] || { rm -f "$pre_fc" "$pre_homedir"; die "foreign modules still present after the install: $(echo $remaining_foreign) -- investigate (RESTORE runbook from the last good backup if needed)."; }
+	installed_count="$(sudo semodule -l | sort -u | wc -l)"
+	[ "$installed_count" -eq "$(store_tree_modules | wc -l)" ] || { rm -f "$pre_fc" "$pre_homedir"; die "store lists $installed_count modules, tree has $(store_tree_modules | wc -l) -- investigate."; }
+
 	# F1: gate the REAL installed result, not the scratch preview -- the S7
 	# hook's gate_says_additive_and_current() checks policy_sha256 against
 	# $INSTALLED_POLICY specifically, so the stamp has to be built from that
@@ -898,6 +1020,9 @@ cmd_store_install() {
 	run_gate_check "$RUNNING_POLICY" "$INSTALLED_POLICY" "$pre_fc" "$INSTALLED_FC" "$pre_homedir" "$INSTALLED_HOMEDIR"
 	print_gate_result "real: installed vs running"
 	rm -f "$pre_fc" "$pre_homedir"
+
+	info "=== refreshing the /usr/share mirror ==="
+	store_usr_share_refresh
 
 	local installed_sha running_sha
 	installed_sha="$(sha256_of "$INSTALLED_POLICY")"
@@ -1804,7 +1929,7 @@ case "${1:-}" in
 	store-sync-finalize) shift; cmd_store_sync_finalize "$@" ;;
 	store-install) shift; cmd_store_install "$@" ;;
 	*)
-		echo "usage: policy-cycle.sh {build|gate|install|load|verify <sesearch-args>|verify-bool <name>|commit|store-sync-plan|store-sync-dryrun|store-sync-apply|store-sync-finalize [--dry-run]|store-install [--dry-run]}"
+		echo "usage: policy-cycle.sh {build|gate|install|load|verify <sesearch-args>|verify-bool <name>|commit|store-sync-plan|store-sync-dryrun|store-sync-apply|store-sync-finalize [--dry-run]|store-install [--dry-run] [--retire-obsolete]}"
 		exit 1
 		;;
 esac
