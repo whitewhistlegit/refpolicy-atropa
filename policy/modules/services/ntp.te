@@ -168,6 +168,8 @@ ifdef(`init_systemd',`
 	# instead. This is systemd-timesyncd actual live domain (ntpd_t is the
 	# shared NTP-client alias in this tree).
 	fs_rw_cgroup_files(ntpd_t)
+	# timesyncd searches and reads the net sysctls
+	kernel_read_net_sysctls(ntpd_t)
 
 	# for /var/lib/systemd/clock
 	init_list_var_lib_dirs(ntpd_t)

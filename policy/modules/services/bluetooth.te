@@ -132,6 +132,8 @@ miscfiles_read_hwdata(bluetooth_t)
 # folded from the module store (audit2allow local module); bluetoothd
 # searches /run/udev for device data
 udev_search_runtime(bluetooth_t)
+# bluetoothd reads the control link under /run/udev
+udev_read_runtime_files(bluetooth_t)
 
 userdom_dontaudit_use_unpriv_user_fds(bluetooth_t)
 userdom_dontaudit_use_user_terminals(bluetooth_t)
