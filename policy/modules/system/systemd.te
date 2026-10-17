@@ -645,17 +645,13 @@ fs_list_efivars(systemd_generator_t)
 fs_getattr_all_fs(systemd_generator_t)
 fs_getattr_nsfs_files(systemd_generator_t)
 
-init_create_runtime_files(systemd_generator_t)
 init_read_all_script_files(systemd_generator_t)
 init_manage_generic_unit_files(systemd_generator_t)
 init_manage_runtime_dirs(systemd_generator_t)
 init_manage_runtime_symlinks(systemd_generator_t)
-init_read_runtime_files(systemd_generator_t)
+init_manage_runtime_files(systemd_generator_t)
 init_read_state(systemd_generator_t)
-init_rename_runtime_files(systemd_generator_t)
 init_search_runtime(systemd_generator_t)
-init_setattr_runtime_files(systemd_generator_t)
-init_write_runtime_files(systemd_generator_t)
 init_read_generic_units_files(systemd_generator_t)
 init_read_generic_units_symlinks(systemd_generator_t)
 init_getattr_all_unit_files(systemd_generator_t)
@@ -1269,6 +1265,7 @@ optional_policy(`
 optional_policy(`
 	devicekit_dbus_chat_disk(systemd_logind_t)
 	devicekit_dbus_chat_power(systemd_logind_t)
+	devicekit_read_power_state(systemd_logind_t)
 ')
 
 optional_policy(`
@@ -1396,6 +1393,7 @@ files_rw_etc_runtime_files(systemd_machine_id_setup_t)
 fs_getattr_cgroup(systemd_machine_id_setup_t)
 fs_search_cgroup_dirs(systemd_machine_id_setup_t)
 fs_getattr_tmpfs(systemd_machine_id_setup_t)
+fs_getattr_xattr_fs(systemd_machine_id_setup_t)
 fs_read_nsfs_files(systemd_machine_id_setup_t)
 fs_unmount_tmpfs(systemd_machine_id_setup_t)
 
@@ -1418,6 +1416,8 @@ optional_policy(`
 #
 # modules-load local policy
 #
+
+allow systemd_modules_load_t self:key write;
 
 corecmd_exec_shell(systemd_modules_load_t)
 
@@ -1520,6 +1520,7 @@ logging_send_syslog_msg(systemd_networkd_t)
 
 miscfiles_read_localization(systemd_networkd_t)
 
+mount_getattr_runtime_files(systemd_networkd_t)
 mount_list_runtime(systemd_networkd_t)
 
 sysnet_read_config(systemd_networkd_t)
@@ -1822,7 +1823,6 @@ kernel_read_kernel_sysctls(systemd_passwd_agent_t)
 
 kernel_read_system_state(systemd_passwd_agent_t)
 kernel_search_fs_sysctls(systemd_passwd_agent_t)
-kernel_stream_connect(systemd_passwd_agent_t)
 
 dev_create_generic_dirs(systemd_passwd_agent_t)
 dev_read_generic_files(systemd_passwd_agent_t)
@@ -1987,6 +1987,7 @@ dev_read_sysfs(systemd_resolved_t)
 
 kernel_read_kernel_sysctls(systemd_resolved_t)
 kernel_read_net_sysctls(systemd_resolved_t)
+kernel_read_network_state_symlinks(systemd_resolved_t)
 kernel_dontaudit_getattr_proc(systemd_resolved_t)
 
 corenet_tcp_bind_generic_node(systemd_resolved_t)
@@ -2237,6 +2238,7 @@ files_manage_generic_tmp_dirs(systemd_tmpfiles_t)
 files_manage_var_dirs(systemd_tmpfiles_t)
 files_manage_var_lib_dirs(systemd_tmpfiles_t)
 files_manage_all_locks(systemd_tmpfiles_t)
+files_read_all_tmp_files(systemd_tmpfiles_t)  # to acquire lock for --clean
 files_purge_tmp(systemd_tmpfiles_t)
 files_read_etc_files(systemd_tmpfiles_t)
 files_read_etc_runtime_files(systemd_tmpfiles_t)
@@ -2339,10 +2341,6 @@ optional_policy(`
 
 optional_policy(`
 	screen_dontaudit_getattr_sock_file(systemd_tmpfiles_t)
-')
-
-optional_policy(`
-	xfs_create_tmp_dirs(systemd_tmpfiles_t)
 ')
 
 optional_policy(`
