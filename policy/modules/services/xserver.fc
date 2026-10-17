@@ -15,6 +15,7 @@ HOME_DIR/\.fonts\.cache-.* --	gen_context(system_u:object_r:user_fonts_cache_t,s
 HOME_DIR/\.fonts\.conf\.d(/.*)?	--	gen_context(system_u:object_r:user_fonts_config_t,s0)
 HOME_DIR/\.fonts\.conf	--	gen_context(system_u:object_r:user_fonts_config_t,s0)
 HOME_DIR/\.ICEauthority.* --	gen_context(system_u:object_r:iceauth_home_t,s0)
+HOME_DIR/\.local/share/fonts(/.*)?		gen_context(system_u:object_r:user_fonts_t,s0)
 HOME_DIR/\.serverauth.*	--	gen_context(system_u:object_r:xauth_home_t,s0)
 HOME_DIR/\.xauth.*	--	gen_context(system_u:object_r:xauth_home_t,s0)
 HOME_DIR/\.xsession-errors	--	gen_context(system_u:object_r:xsession_log_t,s0)
@@ -49,12 +50,6 @@ HOME_DIR/\.Xauthority.*	--	gen_context(system_u:object_r:xauth_home_t,s0)
 /etc/X11/wdm/Xsetup.*	--	gen_context(system_u:object_r:xsession_exec_t,s0)
 /etc/X11/wdm/Xstartup.*	--	gen_context(system_u:object_r:xsession_exec_t,s0)
 /etc/X11/Xsession[^/]*	--	gen_context(system_u:object_r:xsession_exec_t,s0)
-
-#
-# /opt
-#
-
-/opt/kde3/bin/kdm	--	gen_context(system_u:object_r:xdm_exec_t,s0)
 
 #
 # /tmp
@@ -107,7 +102,6 @@ HOME_DIR/\.Xauthority.*	--	gen_context(system_u:object_r:xauth_home_t,s0)
 /usr/X11R6/bin/X	--	gen_context(system_u:object_r:xserver_exec_t,s0)
 /usr/X11R6/bin/xauth	--	gen_context(system_u:object_r:xauth_exec_t,s0)
 /usr/X11R6/bin/XFree86	--	gen_context(system_u:object_r:xserver_exec_t,s0)
-/usr/X11R6/bin/Xipaq	--	gen_context(system_u:object_r:xserver_exec_t,s0)
 /usr/X11R6/bin/Xorg	--	gen_context(system_u:object_r:xserver_exec_t,s0)
 /usr/X11R6/bin/Xwrapper	--	gen_context(system_u:object_r:xserver_exec_t,s0)
 /usr/X11R6/lib/X11/xkb(/.*)?	gen_context(system_u:object_r:xkb_var_lib_t,s0)

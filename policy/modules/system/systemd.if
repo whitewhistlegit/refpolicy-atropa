@@ -60,7 +60,7 @@ template(`systemd_role_template',`
 	# This domain is per-role because of the below transitions.
 	# See the systemd --user section of systemd.te for the
 	# remainder of the rules.
-	allow $1_systemd_t self:process { getsched signal };
+	allow $1_systemd_t self:process { getsched signal setrlimit };
 	allow $1_systemd_t self:netlink_kobject_uevent_socket create_socket_perms;
 	allow $1_systemd_t self:netlink_route_socket r_netlink_socket_perms;
 	allow $1_systemd_t self:unix_dgram_socket { create_socket_perms sendto };
@@ -111,11 +111,11 @@ template(`systemd_role_template',`
 	fs_watch_cgroup_files($1_systemd_t)
 
 	kernel_dontaudit_getattr_proc($1_systemd_t)
+	kernel_read_network_state_symlinks($1_systemd_t)
 	kernel_read_psi($1_systemd_t)
 
-	# if systemd exists in the initrd, the journal socket stays labeled kernel_t
-	# without this access, user services cannot log to the journal
-	kernel_stream_connect($1_systemd_t)
+	# if systemd exists in the initrd:
+	init_stream_connect($1_systemd_t)
 
 	selinux_use_status_page($1_systemd_t)
 
@@ -1311,6 +1311,26 @@ interface(`systemd_stream_connect_homed',`
 	')
 
 	stream_connect_pattern($1, systemd_userdbd_runtime_t, systemd_userdbd_runtime_t, systemd_homed_t)
+')
+
+########################################
+## <summary>
+##   Connect to /run/systemd/io.systemd.Login to
+##   register sessions with systemd-logind.
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+#
+interface(`systemd_stream_connect_logind',`
+	gen_require(`
+		type systemd_logind_t;
+		type systemd_logind_runtime_t;
+	')
+
+	stream_connect_pattern($1, systemd_logind_runtime_t, systemd_logind_runtime_t, systemd_logind_t)
 ')
 
 ######################################
@@ -2815,7 +2835,7 @@ interface(`systemd_tmpfilesd_managed',`
 	')
 
 	allow systemd_tmpfiles_t $1:dir { manage_dir_perms relabel_dir_perms  };
-	allow systemd_tmpfiles_t $1:file { create relabel_file_perms setattr unlink write_file_perms };
+	allow systemd_tmpfiles_t $1:file { manage_file_perms relabel_file_perms };
 	allow systemd_tmpfiles_t $1:lnk_file { create read relabel_lnk_file_perms setattr unlink };
 	allow systemd_tmpfiles_t $1:fifo_file { create relabel_fifo_file_perms setattr unlink };
 

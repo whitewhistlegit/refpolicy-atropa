@@ -28,14 +28,14 @@ gen_tunable(sysadm_allow_rw_inherited_fifo, false)
 
 userdom_admin_user_template(sysadm)
 
-ifndef(`enable_mls',`
-	userdom_security_admin_template(sysadm_t, sysadm_r)
-')
-
 ########################################
 #
 # Local policy
 #
+
+ifndef(`enable_mls',`
+	userdom_security_admin(sysadm_t, sysadm_r)
+')
 
 # for networkctl and possibly other networking tools
 allow sysadm_t self:netlink_route_socket rw_netlink_socket_perms;
@@ -125,6 +125,9 @@ ifdef(`init_systemd',`
 
 	# Allow sysadm to follow logs in the journal, i.e. with podman logs -f
 	systemd_watch_journal_dirs(sysadm_t)
+
+	# Allow sysadm to spawn systemd-tty-ask-password-agent for ask-password
+	systemd_run_passwd_agent(sysadm_t, sysadm_r)
 ')
 
 tunable_policy(`allow_ptrace',`
@@ -154,10 +157,6 @@ optional_policy(`
 
 optional_policy(`
 	aide_admin(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
-	aisexecd_admin(sysadm_t, sysadm_r)
 ')
 
 optional_policy(`
@@ -507,10 +506,6 @@ optional_policy(`
 ')
 
 optional_policy(`
-	hddtemp_admin(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
 	hostname_run(sysadm_t, sysadm_r)
 ')
 
@@ -521,10 +516,6 @@ optional_policy(`
 
 optional_policy(`
 	hypervkvp_admin(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
-	i18n_input_admin(sysadm_t, sysadm_r)
 ')
 
 optional_policy(`
@@ -796,10 +787,6 @@ optional_policy(`
 ')
 
 optional_policy(`
-	openct_admin(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
 	openhpi_admin(sysadm_t, sysadm_r)
 ')
 
@@ -817,10 +804,6 @@ optional_policy(`
 
 optional_policy(`
 	pacemaker_admin(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
-	pads_admin(sysadm_t, sysadm_r)
 ')
 
 optional_policy(`
@@ -851,11 +834,6 @@ optional_policy(`
 	portage_run(sysadm_t, sysadm_r)
 	portage_run_fetch(sysadm_t, sysadm_r)
 	portage_run_gcc_config(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
-	portmap_run_helper(sysadm_t, sysadm_r)
-	portmap_admin(sysadm_t, sysadm_r)
 ')
 
 optional_policy(`
@@ -895,20 +873,8 @@ optional_policy(`
 ')
 
 optional_policy(`
-	pxe_admin(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
 	pyzor_admin(sysadm_t, sysadm_r)
 	pyzor_role(sysadm, sysadm_t, sysadm_application_exec_domain, sysadm_r)
-')
-
-optional_policy(`
-	qpidd_admin(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
-	quantum_admin(sysadm_t, sysadm_r)
 ')
 
 optional_policy(`
@@ -969,10 +935,6 @@ optional_policy(`
 optional_policy(`
 	rpm_run(sysadm_t, sysadm_r)
 	rpm_admin(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
-	rssh_role(sysadm, sysadm_t, sysadm_application_exec_domain, sysadm_r)
 ')
 
 optional_policy(`
@@ -1043,10 +1005,6 @@ optional_policy(`
 
 optional_policy(`
 	shutdown_role(sysadm, sysadm_t, sysadm_application_exec_domain, sysadm_r)
-')
-
-optional_policy(`
-	slpd_admin(sysadm_t, sysadm_r)
 ')
 
 optional_policy(`
@@ -1153,10 +1111,6 @@ optional_policy(`
 ')
 
 optional_policy(`
-	transproxy_admin(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
 	tripwire_run_siggen(sysadm_t, sysadm_r)
 	tripwire_run_tripwire(sysadm_t, sysadm_r)
 	tripwire_run_twadmin(sysadm_t, sysadm_r)
@@ -1165,10 +1119,6 @@ optional_policy(`
 
 optional_policy(`
 	tvtime_role(sysadm, sysadm_t, sysadm_application_exec_domain, sysadm_r)
-')
-
-optional_policy(`
-	tzdata_domtrans(sysadm_t)
 ')
 
 optional_policy(`
@@ -1197,7 +1147,6 @@ optional_policy(`
 
 optional_policy(`
 	dev_rw_generic_usb_dev(sysadm_t)
-	usbmodules_run(sysadm_t, sysadm_r)
 ')
 
 optional_policy(`
@@ -1256,10 +1205,6 @@ optional_policy(`
 ')
 
 optional_policy(`
-	wdmd_admin(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
 	webalizer_run(sysadm_t, sysadm_r)
 ')
 
@@ -1285,15 +1230,7 @@ optional_policy(`
 ')
 
 optional_policy(`
-	xfs_admin(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
 	zabbix_admin(sysadm_t, sysadm_r)
-')
-
-optional_policy(`
-	zarafa_admin(sysadm_t, sysadm_r)
 ')
 
 optional_policy(`
