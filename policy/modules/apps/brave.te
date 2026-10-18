@@ -260,6 +260,34 @@ optional_policy(`
 	dontaudit brave_t bluetooth_t:dbus send_msg;
 ')
 
+# Expected and kept denied: the browser probes whether a PID is alive with
+# signal 0 on unconfined user processes (launcher or SingletonLock owner).
+# EACCES reads as exists to the caller so nothing breaks.
+optional_policy(`
+	gen_require(`
+		type unconfined_t;
+	')
+
+	dontaudit brave_t unconfined_t:process signull;
+')
+
+# logind Manager broadcasts (PrepareForSleep and SessionNew/SessionRemoved)
+# reach the browser because it subscribes for suspend and resume. Receive
+# only: the browser gets no right to call logind (see the dontaudit below).
+# Expected and kept denied: Manager.Inhibit at startup (suspend delay lock).
+# send_msg is per peer and not per method so an allow would also open
+# PowerOff and Reboot and block inhibitors and session control to a
+# compromised browser.
+optional_policy(`
+	gen_require(`
+		type systemd_logind_t;
+		class dbus send_msg;
+	')
+
+	allow systemd_logind_t brave_t:dbus send_msg;
+	dontaudit brave_t systemd_logind_t:dbus send_msg;
+')
+
 fs_dontaudit_getattr_xattr_fs(brave_t)
 fs_getattr_tmpfs(brave_t)
 fs_search_cgroup_dirs(brave_t)
