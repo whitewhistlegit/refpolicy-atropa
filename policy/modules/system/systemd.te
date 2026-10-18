@@ -2208,10 +2208,16 @@ auth_getattr_shadow(systemd_tmpfiles_t)
 allow systemd_tmpfiles_t bin_t:lnk_file { getattr read };
 optional_policy(`
 	gen_require(`
-		type auditd_etc_t;
+		type auditd_etc_t, auditd_log_t;
 	')
 
-	allow systemd_tmpfiles_t auditd_etc_t:dir search;
+	# audit.conf tmpfiles.d lines: CHASE_SAFE stats /etc/audit and --clean
+	# opens plugins.d and rules.d and /var/log/audit as directories while the
+	# C lines stat the existing targets. Directory listing and file getattr
+	# only: no file read or write and no relabel.
+	allow systemd_tmpfiles_t auditd_etc_t:dir { getattr open read search };
+	allow systemd_tmpfiles_t auditd_etc_t:file getattr;
+	allow systemd_tmpfiles_t auditd_log_t:dir { getattr open read };
 ')
 
 kernel_getattr_proc(systemd_tmpfiles_t)
