@@ -561,6 +561,8 @@ domain_read_all_domains_state(systemd_coredump_t)
 
 files_getattr_all_mountpoints(systemd_coredump_t)
 files_read_etc_files(systemd_coredump_t)
+# search of the generic cert directories seen at coredump time
+miscfiles_search_generic_cert_dirs(systemd_coredump_t)
 files_search_var_lib(systemd_coredump_t)
 files_mounton_root(systemd_coredump_t)
 
@@ -883,6 +885,8 @@ allow systemd_hostnamed_t self:capability sys_admin;
 allow systemd_hostnamed_t self:process setfscreate;
 
 fs_getattr_cgroup(systemd_hostnamed_t)
+# memory.pressure getattr seen on hostnamed
+fs_getattr_cgroup_files(systemd_hostnamed_t)
 fs_getattr_xattr_fs(systemd_hostnamed_t)
 
 kernel_read_kernel_sysctls(systemd_hostnamed_t)
@@ -2259,6 +2263,12 @@ files_manage_etc_symlinks(systemd_tmpfiles_t)
 
 fs_getattr_cgroup(systemd_tmpfiles_t)
 fs_list_tmpfs(systemd_tmpfiles_t)
+# varlink registry symlinks are created on tmpfs_t before the policy loads.
+# Parent directory permissions already come from systemd_tmpfiles_manage_all.
+gen_require(`
+	type tmpfs_t;
+')
+allow systemd_tmpfiles_t tmpfs_t:lnk_file manage_lnk_file_perms;
 fs_relabelfrom_tmpfs_dirs(systemd_tmpfiles_t)
 fs_getattr_all_fs(systemd_tmpfiles_t)
 fs_search_auto_mountpoints(systemd_tmpfiles_t)
