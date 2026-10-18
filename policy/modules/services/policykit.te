@@ -145,6 +145,9 @@ optional_policy(`
 	# for /run/systemd/users/*
 	systemd_read_logind_runtime_files(policykit_t)
 	systemd_watch_logind_runtime_dirs(policykit_t)
+
+	# polkit resolves a subject unit via GetUnitByPIDFD (user@.service)
+	systemd_get_user_manager_units_status(policykit_t)
 ')
 
 ########################################

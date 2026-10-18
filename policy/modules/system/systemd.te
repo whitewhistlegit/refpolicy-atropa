@@ -563,6 +563,10 @@ files_getattr_all_mountpoints(systemd_coredump_t)
 files_read_etc_files(systemd_coredump_t)
 # search of the generic cert directories seen at coredump time
 miscfiles_search_generic_cert_dirs(systemd_coredump_t)
+# libdw debuginfod and curl chain makes OpenSSL read openssl.cnf at init
+# while parsing a crashed binary. No TLS is used so defaults are fine.
+# Kept denied on purpose.
+miscfiles_dontaudit_read_generic_certs(systemd_coredump_t)
 files_search_var_lib(systemd_coredump_t)
 files_mounton_root(systemd_coredump_t)
 
@@ -887,6 +891,14 @@ allow systemd_hostnamed_t self:process setfscreate;
 fs_getattr_cgroup(systemd_hostnamed_t)
 # memory.pressure getattr seen on hostnamed
 fs_getattr_cgroup_files(systemd_hostnamed_t)
+# memory.pressure PSI watch (sd-event): open rw and write the trigger. Same
+# idea as the Q4 grants for logind and userdbd. The file is cgroup_t on this
+# kernel. A raw rule on purpose: the interface would also cover every other
+# cgroup file type and symlink.
+gen_require(`
+	type cgroup_t;
+')
+allow systemd_hostnamed_t cgroup_t:file { open read write };
 fs_getattr_xattr_fs(systemd_hostnamed_t)
 
 kernel_read_kernel_sysctls(systemd_hostnamed_t)
@@ -2147,6 +2159,13 @@ logging_send_audit_msgs(systemd_sysusers_t)
 selinux_use_status_page(systemd_sysusers_t)
 
 auth_manage_shadow(systemd_sysusers_t)
+# auth_rw_shadow_lock (via auth_manage_shadow) has the .pwd.lock file
+# transition but no create. Needed if /etc/.pwd.lock is missing. Otherwise
+# only a cold dcache speculative create check is logged at boot.
+gen_require(`
+	type shadow_lock_t;
+')
+allow systemd_sysusers_t shadow_lock_t:file create;
 auth_etc_filetrans_shadow(systemd_sysusers_t)
 auth_use_nsswitch(systemd_sysusers_t)
 
@@ -2314,6 +2333,13 @@ kernel_relabelfrom_unlabeled_blk_devs(systemd_tmpfiles_t)
 kernel_relabelfrom_unlabeled_chr_devs(systemd_tmpfiles_t)
 
 logging_create_audit_log_dirs(systemd_tmpfiles_t)
+# tmpfiles --clean stats the target of the L line for
+# /run/varlink/registry/io.systemd.Journal (the journald varlink socket).
+# The other two L line targets are already covered.
+gen_require(`
+	type syslogd_runtime_t;
+')
+allow systemd_tmpfiles_t syslogd_runtime_t:sock_file getattr;
 logging_relabel_audit_log_dirs(systemd_tmpfiles_t)
 logging_relabel_generic_log_dirs(systemd_tmpfiles_t)
 logging_relabel_syslogd_tmp_files(systemd_tmpfiles_t)
