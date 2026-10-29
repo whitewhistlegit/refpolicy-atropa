@@ -76,6 +76,13 @@ corenet_udp_bind_generic_node(dirmngr_t)
 
 files_read_etc_files(dirmngr_t)
 files_read_usr_files(dirmngr_t)
+# p11-kit (GnuTLS system trust) mmaps its module config and the trust
+# anchors under /usr/share. Without map the TLS verification fails
+# (archlinux-keyring-wkd-sync).
+files_map_usr_files(dirmngr_t)
+# With ipv6.disable=1 every AF_INET6 socket makes the kernel try to load
+# net-pf-10. Module requests stay denied and are only not logged.
+kernel_dontaudit_request_load_module(dirmngr_t)
 
 miscfiles_read_localization(dirmngr_t)
 miscfiles_read_generic_certs(dirmngr_t)

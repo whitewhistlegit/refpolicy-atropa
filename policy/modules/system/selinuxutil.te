@@ -526,6 +526,11 @@ optional_policy(`
 
 allow semanage_t self:capability { audit_write dac_override };
 dontaudit semanage_t self:capability { sys_admin sys_resource };
+# libsemanage re-applies labels to the module store and installed policy files
+# after a rebuild. The files already carry the right labels so the relabel
+# attempt is noise. Keep denied.
+dontaudit semanage_t semanage_store_t:{ dir file } relabelto;
+dontaudit semanage_t { file_context_t policy_config_t selinux_config_t }:file relabelfrom;
 allow semanage_t self:unix_stream_socket create_stream_socket_perms;
 allow semanage_t self:unix_dgram_socket create_socket_perms;
 allow semanage_t self:netlink_audit_socket { create_netlink_socket_perms nlmsg_relay };

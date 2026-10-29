@@ -950,6 +950,10 @@ optional_policy(`
 	unconfined_dbus_send(systemd_hostnamed_t)
 ')
 
+optional_policy(`
+	policykit_dbus_chat(systemd_hostnamed_t)
+')
+
 #########################################
 #
 # hw local policy
@@ -2340,6 +2344,18 @@ gen_require(`
 	type syslogd_runtime_t;
 ')
 allow systemd_tmpfiles_t syslogd_runtime_t:sock_file getattr;
+# tmpfiles --clean touches sockets left in /tmp. Refusing is harmless
+# because the clean exits 0. Keep denied.
+gen_require(`
+	type user_tmp_t;
+')
+dontaudit systemd_tmpfiles_t user_tmp_t:sock_file read;
+optional_policy(`
+	gen_require(`
+		type brave_tmp_t;
+	')
+	dontaudit systemd_tmpfiles_t brave_tmp_t:sock_file read;
+')
 logging_relabel_audit_log_dirs(systemd_tmpfiles_t)
 logging_relabel_generic_log_dirs(systemd_tmpfiles_t)
 logging_relabel_syslogd_tmp_files(systemd_tmpfiles_t)

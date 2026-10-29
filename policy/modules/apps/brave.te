@@ -260,6 +260,11 @@ optional_policy(`
 	dontaudit brave_t bluetooth_t:dbus send_msg;
 ')
 
+# Expected and kept denied: with ipv6.disable=1 every AF_INET6 socket makes
+# the kernel try to load net-pf-10 and brave may not trigger module loads
+# anyway.
+kernel_dontaudit_request_load_module(brave_t)
+
 # Expected and kept denied: the browser probes whether a PID is alive with
 # signal 0 on unconfined user processes (launcher or SingletonLock owner).
 # EACCES reads as exists to the caller so nothing breaks.
