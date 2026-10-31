@@ -1148,6 +1148,26 @@ interface(`auth_manage_lastlog',`
 
 ########################################
 ## <summary>
+##	Manage the lastlog2 database directory and files
+##	(/var/lib/lastlog: SQLite db plus journal).
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+#
+interface(`auth_manage_lastlog2',`
+	gen_require(`
+		type lastlog_t;
+	')
+
+	files_search_var_lib($1)
+	manage_files_pattern($1, lastlog_t, lastlog_t)
+')
+
+########################################
+## <summary>
 ##	Execute pam programs in the pam domain.
 ## </summary>
 ## <param name="domain">
