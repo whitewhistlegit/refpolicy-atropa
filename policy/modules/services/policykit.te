@@ -284,5 +284,16 @@ auth_use_nsswitch(policykit_resolve_t)
 userdom_read_all_users_state(policykit_resolve_t)
 
 optional_policy(`
+	gen_require(`
+		type systemd_homed_runtime_t, systemd_nsresourced_runtime_t;
+	')
+	# nss-systemd asks homed and nsresourced about every user. Neither is used.
+	dontaudit policykit_t { systemd_homed_runtime_t systemd_nsresourced_runtime_t }:sock_file { read write };
+')
+
+# polkit-agent-helper-1 is the setuid password checker. Keep net_admin denied.
+dontaudit policykit_auth_t self:capability net_admin;
+
+optional_policy(`
 	dbus_system_bus_client(policykit_resolve_t)
 ')

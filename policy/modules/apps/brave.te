@@ -520,8 +520,9 @@ tunable_policy(`brave_gamepad',`
 ')
 
 # Home access is read-only via userdom_user_content_access_template
-# (brave_read_generic_user_content, default on), which is enough for the
-# upload file picker. Saving outside ~/Downloads needs
+# (brave_read_generic_user_content is off by default in this tree: turn it on
+# for the upload file picker to read generic home content). Saving outside
+# ~/Downloads needs
 # brave_manage_generic_user_content; not granted by default because
 # user_home_t covers ~/.bashrc and friends.
 

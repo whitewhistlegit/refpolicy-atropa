@@ -297,6 +297,35 @@ ifdef(`init_systemd',`
 	')
 ')
 
+# Unconfined users log in over SSH (pam_selinux sets the exec context).
+# Narrower than ssh_sysadm_login which opens every user domain.
+optional_policy(`
+	gen_require(`
+		type unconfined_t;
+	')
+	allow sshd_t unconfined_t:process { signal transition };
+	dontaudit sshd_t unconfined_t:process { noatsecure rlimitinh siginh };
+')
+
+# lastlog2 keeps a SQLite database and journal in the lastlog directory.
+auth_manage_lastlog2(sshd_t)
+
+optional_policy(`
+	gen_require(`
+		type systemd_homed_runtime_t;
+	')
+	# nss-systemd asks homed about every user. homed is not used.
+	dontaudit sshd_t systemd_homed_runtime_t:sock_file write;
+')
+
+optional_policy(`
+	gen_require(`
+		type xdm_t;
+		class key search;
+	')
+	dontaudit sshd_t xdm_t:key search;
+')
+
 tunable_policy(`ssh_sysadm_login',`
 	# Relabel and access ptys created by sshd
 	# ioctl is necessary for logout() processing for utmp entry and for w to

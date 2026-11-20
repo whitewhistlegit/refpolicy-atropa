@@ -244,6 +244,9 @@ ifndef(`distro_redhat',`
 
 /var/lib/dkms(/.*)?		gen_context(system_u:object_r:src_t,s0)
 
+/var/lib/flatpak/app/[^/]+/current	-l	gen_context(system_u:object_r:usr_t,s0)
+/var/lib/flatpak/app/[^/]+/[^/]+/[^/]+/active	-l	gen_context(system_u:object_r:usr_t,s0)
+/var/lib/flatpak/app/[^/]+/[^/]+/[^/]+/[^/]+/export(/.*)?	gen_context(system_u:object_r:usr_t,s0)
 /var/lib/flatpak/exports/share(/.*)?	gen_context(system_u:object_r:usr_t,s0)
 
 /var/lib/nfs/rpc_pipefs(/.*)?	<<none>>
