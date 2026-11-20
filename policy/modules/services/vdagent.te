@@ -58,8 +58,12 @@ userdom_read_all_users_state(vdagent_t)
 systemd_read_logind_sessions_files(vdagent_t)
 kernel_read_system_state(vdagent_t)
 fs_getattr_xattr_fs(vdagent_t)
-# An allow would let vdagentd autoload any module. Keep module requests denied.
-kernel_dontaudit_request_load_module(vdagent_t)
+# vdagentd opens /dev/uinput. If the uinput module is not loaded the kernel
+# autoloads it for vdagentd (char-major-10-223). Without this the daemon exits.
+kernel_request_load_module(vdagent_t)
+# sd-login: monitor /run/systemd/sessions and map UIDs to sessions (/run/systemd/users)
+systemd_watch_logind_sessions_dirs(vdagent_t)
+systemd_read_logind_runtime_files(vdagent_t)
 
 optional_policy(`
 	dbus_system_bus_client(vdagent_t)
