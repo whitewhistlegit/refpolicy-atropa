@@ -456,7 +456,7 @@ tunable_policy(`virt_use_evdev',`
 #
 
 allow virtd_t self:capability { chown dac_override dac_read_search fowner fsetid ipc_lock kill mknod net_admin net_raw setgid setpcap setuid sys_admin sys_chroot sys_nice sys_ptrace };
-dontaudit virtd_t self:capability { sys_module sys_ptrace };
+dontaudit virtd_t self:capability { sys_module sys_ptrace sys_rawio };
 allow virtd_t self:capability2 { bpf perfmon };
 allow virtd_t self:bpf { map_create map_read map_write prog_load prog_run };
 allow virtd_t self:process { execmem getcap getsched setcap setexec setfscreate setrlimit setsched setsockcreate sigkill signal signull };
@@ -657,6 +657,26 @@ fs_manage_hugetlbfs_dirs(virtd_t)
 fs_rw_hugetlbfs_files(virtd_t)
 fs_read_nsfs_files(virtd_t)
 fs_mount_tmpfs(virtd_t)
+# qemu driver: the per-domain mount namespace (namespaces mount is the
+# default) detaches the host /dev and its helper mounts before building the
+# domain own /dev. Specific filesystems only and not fs_unmount_all_fs.
+dev_unmount_fs(virtd_t)
+fs_unmount_tmpfs(virtd_t)
+term_unmount_devpts(virtd_t)
+gen_require(`
+	type hugetlbfs_t, devpts_t;
+')
+allow virtd_t hugetlbfs_t:filesystem unmount;
+allow virtd_t devpts_t:dir write;
+
+# systemd LoadCredential: /run/credentials/libvirtd.service/* (secrets-encryption-key)
+gen_require(`
+	type init_tmpfs_t;
+')
+allow virtd_t init_tmpfs_t:file { getattr open read };
+
+# qemu display memfd
+allow virtd_t virt_tmpfs_t:file map;
 
 mls_fd_share_all_levels(virtd_t)
 mls_file_read_to_clearance(virtd_t)
@@ -713,6 +733,13 @@ ifdef(`init_systemd',`
 
 	systemd_connect_machined(virtd_t)
 	systemd_dbus_chat_machined(virtd_t)
+
+	gen_require(`
+		type systemd_machined_t;
+	')
+	# machined registers the guest (qemu runs as virtd_t without sVirt) and
+	# reads its /proc entries
+	ps_process_pattern(systemd_machined_t, virtd_t)
 ')
 
 tunable_policy(`virt_use_fusefs',`
@@ -1253,6 +1280,8 @@ kernel_read_system_state(virtlogd_t)
 dev_read_sysfs(virtlogd_t)
 
 files_read_etc_files(virtlogd_t)
+miscfiles_search_generic_cert_dirs(virtlogd_t)
+corecmd_search_bin(virtlogd_t)
 files_list_var_lib(virtlogd_t)
 
 logging_send_syslog_msg(virtlogd_t)
