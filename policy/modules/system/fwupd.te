@@ -112,6 +112,7 @@ dev_watch_sysfs_dirs(fwupd_t)
 corecmd_exec_bin(fwupd_t)
 corecmd_list_bin(fwupd_t)
 corecmd_watch_bin_dirs(fwupd_t)
+libs_watch_lib_dirs(fwupd_t)
 
 corenet_tcp_connect_all_unreserved_ports(fwupd_t)
 corenet_tcp_connect_generic_port(fwupd_t)
@@ -138,6 +139,7 @@ fs_mmap_read_dos_files(fwupd_t)
 
 init_get_generic_units_status(fwupd_t)
 init_get_system_status(fwupd_t)
+init_search_var_lib_dirs(fwupd_t)
 
 # for cgroup file of init_t process
 init_read_state(fwupd_t)
@@ -243,6 +245,8 @@ files_read_etc_symlinks(fwupdmgr_t)
 files_read_usr_files(fwupdmgr_t)
 files_map_usr_files(fwupdmgr_t)
 
+fs_getattr_xattr_fs(fwupdmgr_t)
+
 miscfiles_read_generic_certs(fwupdmgr_t)
 miscfiles_read_localization(fwupdmgr_t)
 
@@ -257,6 +261,8 @@ userdom_rw_user_tmp_files(fwupdmgr_t)
 userdom_manage_user_runtime_dirs(fwupdmgr_t)
 userdom_mmap_manage_user_runtime_files(fwupdmgr_t)
 xdg_search_config_dirs(fwupdmgr_t)
+# GLib searches the user data dirs (e.g. for GSettings schemas)
+xdg_search_data_dirs(fwupdmgr_t)
 
 optional_policy(`
 	dbus_all_session_bus_client(fwupdmgr_t)
