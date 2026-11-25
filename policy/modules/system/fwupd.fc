@@ -5,6 +5,7 @@
 /usr/libexec/fwupd/fwupd --	gen_context(system_u:object_r:fwupd_exec_t,s0)
 
 /usr/lib/fwupd/fwupd	--	gen_context(system_u:object_r:fwupd_exec_t,s0)
+/usr/lib/fwupd/fwupd-detect-cet	--	gen_context(system_u:object_r:bin_t,s0)
 
 /var/lib/fwupd(/.*)?		gen_context(system_u:object_r:fwupd_var_lib_t,s0)
 

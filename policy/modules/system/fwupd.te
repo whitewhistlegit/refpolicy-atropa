@@ -112,6 +112,7 @@ dev_watch_sysfs_dirs(fwupd_t)
 corecmd_exec_bin(fwupd_t)
 corecmd_list_bin(fwupd_t)
 corecmd_watch_bin_dirs(fwupd_t)
+libs_watch_lib_dirs(fwupd_t)
 
 corenet_tcp_connect_all_unreserved_ports(fwupd_t)
 corenet_tcp_connect_generic_port(fwupd_t)
@@ -138,6 +139,7 @@ fs_mmap_read_dos_files(fwupd_t)
 
 init_get_generic_units_status(fwupd_t)
 init_get_system_status(fwupd_t)
+init_search_var_lib_dirs(fwupd_t)
 
 # for cgroup file of init_t process
 init_read_state(fwupd_t)
