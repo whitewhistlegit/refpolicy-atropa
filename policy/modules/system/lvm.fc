@@ -55,6 +55,7 @@
 /usr/bin/pvremove		--	gen_context(system_u:object_r:lvm_exec_t,s0)
 /usr/bin/pvs			--	gen_context(system_u:object_r:lvm_exec_t,s0)
 /usr/bin/pvscan			--	gen_context(system_u:object_r:lvm_exec_t,s0)
+/usr/bin/systemd-cryptsetup	--	gen_context(system_u:object_r:lvm_exec_t,s0)
 /usr/bin/veritysetup		--	gen_context(system_u:object_r:lvm_exec_t,s0)
 /usr/bin/vgcfgbackup		--	gen_context(system_u:object_r:lvm_exec_t,s0)
 /usr/bin/vgcfgrestore		--	gen_context(system_u:object_r:lvm_exec_t,s0)
